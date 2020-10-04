@@ -1,10 +1,14 @@
 # -*- coding:utf-8 -*-
 import sqlite3
 
-# connect to the database and get the cursor
-DB_name = 'database.db'
-my_database = sqlite3.connect(DB_name)
-my_cursor = my_database.cursor()
+
+def Create_DB():
+    global my_cursor, my_database
+
+    # connect to the database and get the cursor
+    DB_name = 'database.db'
+    my_database = sqlite3.connect(DB_name)
+    my_cursor = my_database.cursor()
 
 
 def Create_user():  # checked
@@ -50,6 +54,7 @@ def Delete_user(user_id):  # checked
     Note: The required parameter is the 'user_id',
           which is the primary key of the tuple.
     '''
+
     delete_id = user_id  # Receive the id of the user to be deleted
     my_cursor.execute('''DELETE FROM USER WHERE ID = ?;''', [(delete_id)])
 
@@ -63,6 +68,7 @@ def Select_user(user_id):  # checked
     Note: The required parameter is the user id,
           which is the primary key of the tuple.
     '''
+
     select_id = user_id
     my_cursor.execute('''SELECT * FROM USER WHERE ID = ?;''', [(select_id)])
 
@@ -105,6 +111,7 @@ def Close_database():  # checked
     Note: After operating the database, you should commit
           the transaction and then close the connection.
     '''
+
     my_cursor.close()
     my_database.commit()
     my_database.close()
@@ -116,6 +123,13 @@ if __name__ == '__main__':
     the following code will be executed,
     and it will not be executed as the called library
     '''
-    Create_user()
 
+    # test
+    Create_DB()
+    Create_user()
+    '''
+    Insert_user(1, 'one', 111)
+    Insert_user(2, 'two', 222)
+    Insert_user(3, 'three', 333)
+    '''
     Close_database()
