@@ -83,6 +83,18 @@ def Select_user(user_id):  # checked
     # (2)    print(item)
 
 
+def Select_all():
+    '''
+    Function: Select_all()
+    Usage: Query all tuples in the data sheet and return
+    Note: The returned data type is dictionary type
+    '''
+
+    my_cursor.execute('''SELECT * FROM USER;''')
+    return my_cursor.fetchall()
+    # print(my_cursor.fetchall())
+
+
 def Update_user(user_id, new_name, new_balance):  # checked
     '''
     Function: Update_user(user_id)
@@ -132,4 +144,5 @@ if __name__ == '__main__':
     Insert_user(2, 'two', 222)
     Insert_user(3, 'three', 333)
     '''
+    Select_all()
     Close_database()
