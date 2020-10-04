@@ -16,6 +16,7 @@ class UI(QWidget):
         self.length = 650
         self.height = 750
         self.title = '管理系统'
+        self.search_result = False
         self.initUI()  # init UI
 
     # Initialize the UI interface
@@ -61,7 +62,7 @@ class UI(QWidget):
         self.search_box = QLineEdit(self)
         self.search_box.resize(280, 30)
         self.search_box.move(30, 140)
-        self.search_box.setPlaceholderText('请输入要查询的卡号或刷卡')
+        self.search_box.setPlaceholderText('请输入要查询的卡号或刷卡读取卡号')
 
         # Two buttons: search and show all
         # 'search' Button
@@ -92,7 +93,7 @@ class UI(QWidget):
         self.result_box = QListWidget(self)
         self.result_box.resize(280, 350)
         self.result_box.move(30, 240)
-        # self.result_box.addItem("Added content")
+        self.result_box.doubleClicked.connect(self.Re_list_left)
 
         # Arrow in the middle of the two lists
         self.arrow_text = QLabel(self)
@@ -135,31 +136,53 @@ class UI(QWidget):
         # Query the entered card number information from the database
         # Get the content in the text box
         search_id_text = self.search_box.text()
+        self.result_box.clear()  # Clear the contents of the list first
+        self.information_box.clear()
         if search_id_text:  # If the text box is not empty
             search_id = int(search_id_text)
-            self.result_box.clear()  # Clear the contents of the list first
             Database.Create_DB()  # connect DB to search
             if Database.Select_user(search_id) is None:
                 # No information about this card was found
                 self.result_box.addItem('没有查到此卡的信息！')
+                self.search_result = False
             else:
                 # Found the card information
                 # Then output the query result
                 self.result_box.addItem(search_id_text)
+                self.search_result = True
             # Disconnect from the database
             Database.Close_database()
         else:
             self.result_box.addItem('请输入查询的卡号！')
+            self.search_result = False
 
     # 'show_all' button response function
     def Re_show_all_button(self):
-        # 补充：响应事件
-        pass
+        # Query all tuples in the data sheet
+        Database.Create_DB()  # connect DB to search
+        all_tuples = Database.Select_all()
+        Database.Close_database()  # Disconnect from the database
+        self.result_box.clear()  # Clear the contents of the list first
+        self.information_box.clear()
+        for item in all_tuples:
+            self.result_box.addItem(str(item[0]))
+            # print(item[0])
+        self.search_result = True
 
     # Responding to events after double-clicking the left list
-    def Re_list_left():
-        # 补充：响应事件
-        pass
+    def Re_list_left(self):
+        # Double-click an item in the list on the left
+        # to open the corresponding information on the right
+        now_item = self.result_box.currentItem().text()  # Get selected item
+        # print(now_item)
+        self.information_box.clear()  # Clear the contents of the list first
+        if self.search_result is True:  # Search successful
+            Database.Create_DB()
+            info = Database.Select_user(int(now_item))
+            Database.Close_database()
+            self.information_box.addItem('卡号：' + str(info[0]))  # ID
+            self.information_box.addItem('用户名：' + str(info[1]))  # NAME
+            self.information_box.addItem('余额：' + str(info[2]))  # BALANCE
 
     # 'new' button response function
     def Re_new_button(self):
