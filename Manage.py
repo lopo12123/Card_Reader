@@ -327,15 +327,21 @@ class UI_NEW(QWidget):
         # If the three information is not empty, store it in the database
         if self.new_id != '' and self.new_name != '' and self.new_balance != '':
             if is_number(self.new_id) is True and is_number(self.new_balance) is True:
-                Database.Create_DB()
-                Database.Insert_user(int(self.new_id), self.new_name, int(self.new_balance))
-                Database.Close_database()
-                self.close()
+                if int(self.new_balance) < 0:
+                    self.Warning_2()
+                else:
+                    Database.Create_DB()
+                    Database.Insert_user(int(self.new_id), self.new_name, int(self.new_balance))
+                    Database.Close_database()
+                    self.close()
             else:
                 self.Warning()
 
     def Warning(self):
         self.reply = QMessageBox.question(self, '警告！', '请确认卡号/余额为纯数字！', QMessageBox.Yes, QMessageBox.Yes)
+
+    def Warning_2(self):
+        self.reply = QMessageBox.question(self, '警告！', '请确认余额值非负！', QMessageBox.Yes, QMessageBox.Yes)
 
 
 # 'Edit' interface
@@ -414,15 +420,21 @@ class UI_EDIT(QWidget):
         # If the two information is not empty, store it in the database
         if self.new_name != '' and self.new_balance != '':
             if is_number(self.new_balance) is True:
-                Database.Create_DB()
-                Database.Update_user(int(self.select_id), self.new_name, int(self.new_balance))
-                Database.Close_database()
-                self.close()
+                if int(self.new_balance) < 0:
+                    self.Warning_2()
+                else:
+                    Database.Create_DB()
+                    Database.Update_user(int(self.select_id), self.new_name, int(self.new_balance))
+                    Database.Close_database()
+                    self.close()
             else:
                 self.Warning()
 
     def Warning(self):
         self.reply = QMessageBox.question(self, '警告！', '请确认余额为纯数字！', QMessageBox.Yes, QMessageBox.Yes)
+
+    def Warning_2(self):
+        self.reply = QMessageBox.question(self, '警告！', '请确认余额值非负！', QMessageBox.Yes, QMessageBox.Yes)
 
 
 def is_number(s):
