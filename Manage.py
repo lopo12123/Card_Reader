@@ -16,7 +16,10 @@ class UI(QWidget):
         self.length = 650
         self.height = 750
         self.title = '管理系统'
-        self.search_result = False
+        self.search_result = False  # Whether the query is successful
+        self.select_result = False  # Whether any item is selected
+        self.now_item = ''
+        self.info = None
         self.initUI()  # init UI
 
     # Initialize the UI interface
@@ -67,12 +70,14 @@ class UI(QWidget):
         # Two buttons: search and show all
         # 'search' Button
         self.search_button = QPushButton('查询', self)
+        self.search_button.setToolTip('查询当前卡号的卡片信息')
         self.search_button.resize(120, 30)
         self.search_button.move(340, 140)
         self.search_button.clicked.connect(self.Re_search_button)
 
         # 'show_all' Button
         self.show_all_button = QPushButton('显示全部', self)
+        self.show_all_button.setToolTip('显示所有卡片的信息')
         self.show_all_button.resize(120, 30)
         self.show_all_button.move(500, 140)
         self.show_all_button.clicked.connect(self.Re_show_all_button)
@@ -105,25 +110,32 @@ class UI(QWidget):
         self.information_box = QListWidget(self)
         self.information_box.resize(280, 350)
         self.information_box.move(340, 240)
-        # 补充：响应事件
+        # Add the 'list box cannot be selected' function
 
         # New button
         self.new_button = QPushButton('添加卡片信息', self)
         self.new_button.setToolTip('添加新的卡片数据')
         self.new_button.resize(130, 40)
         self.new_button.move(65, 650)
+        # An interface for adding new cards appears
+        # Connect to the response function
+        self.new_button.clicked.connect(self.Re_new_button)
 
         # Edit button
         self.edit_button = QPushButton('修改卡片信息', self)
         self.edit_button.setToolTip('修改当前选中的卡片的数据')
         self.edit_button.resize(130, 40)
         self.edit_button.move(260, 650)
+        # An interface for modifying card information appears
+        # Connect to the response function
+        self.edit_button.clicked.connect(self.Re_edit_button)
 
         # Close button
         self.close_button = QPushButton('关闭管理系统', self)
         self.close_button.setToolTip('保存操作并关闭系统')
         self.close_button.resize(130, 40)
         self.close_button.move(455, 650)
+        self.close_button.clicked.connect(self.close)  # close the window
 
     # Used to get the current time and display
     def get_time(self):
@@ -145,16 +157,19 @@ class UI(QWidget):
                 # No information about this card was found
                 self.result_box.addItem('没有查到此卡的信息！')
                 self.search_result = False
+                self.select_result = False
             else:
                 # Found the card information
                 # Then output the query result
                 self.result_box.addItem(search_id_text)
                 self.search_result = True
+                self.select_result = False
             # Disconnect from the database
             Database.Close_database()
         else:
             self.result_box.addItem('请输入查询的卡号！')
             self.search_result = False
+            self.select_result = False
 
     # 'show_all' button response function
     def Re_show_all_button(self):
@@ -162,42 +177,231 @@ class UI(QWidget):
         Database.Create_DB()  # connect DB to search
         all_tuples = Database.Select_all()
         Database.Close_database()  # Disconnect from the database
+        self.search_box.clear()
         self.result_box.clear()  # Clear the contents of the list first
         self.information_box.clear()
         for item in all_tuples:
             self.result_box.addItem(str(item[0]))
             # print(item[0])
         self.search_result = True
+        self.select_result = False
 
     # Responding to events after double-clicking the left list
     def Re_list_left(self):
         # Double-click an item in the list on the left
         # to open the corresponding information on the right
-        now_item = self.result_box.currentItem().text()  # Get selected item
-        # print(now_item)
+        self.now_item = self.result_box.currentItem().text()  # selected item
+        # print(self.now_item)
         self.information_box.clear()  # Clear the contents of the list first
         if self.search_result is True:  # Search successful
             Database.Create_DB()
-            info = Database.Select_user(int(now_item))
+            self.info = Database.Select_user(int(self.now_item))
             Database.Close_database()
-            self.information_box.addItem('卡号：' + str(info[0]))  # ID
-            self.information_box.addItem('用户名：' + str(info[1]))  # NAME
-            self.information_box.addItem('余额：' + str(info[2]))  # BALANCE
+            self.information_box.addItem('卡号：' + str(self.info[0]))  # ID
+            self.information_box.addItem('用户名：' + str(self.info[1]))  # NAME
+            self.information_box.addItem('余额：' + str(self.info[2]))  # BALANCE
+            self.select_result = True
 
     # 'new' button response function
     def Re_new_button(self):
-        # 补充：响应事件
-        pass
+        # Clear current page
+        self.search_box.clear()
+        self.result_box.clear()
+        self.information_box.clear()
+        # Clear the input box to enter new data
+        my_UI_new.id_box.setText('')
+        my_UI_new.name_box.setText('')
+        my_UI_new.balance_box.setText('')
+        my_UI_new.show()
 
     # 'edit' button response function
     def Re_edit_button(self):
-        # 补充：响应事件
-        pass
+        # If and only if you select an item in the list on the left,
+        # a response will appear, and the modification interface will appear
+        if my_UI.select_result:
+            self.search_box.clear()
+            self.result_box.clear()
+            self.information_box.clear()
+            my_UI_edit.id_box.setText(str(self.info[0]))
+            my_UI_edit.name_box.setText(str(self.info[1]))
+            my_UI_edit.balance_box.setText(str(self.info[2]))
+            my_UI_edit.show()
+        # else: QMessagebox
 
+    '''
     # 'close' button response function
     def Re_close_button(self):
         # 补充：响应事件
         pass
+    '''
+
+
+# 'NEW' interface
+# 'Edit' interface
+class UI_NEW(QWidget):
+    # Setting parameters
+    def __init__(self):
+        super().__init__()
+        self.pos_X = 475
+        self.pos_Y = 340
+        self.length = 300
+        self.height = 350
+        self.title = '新建'
+        self.new_id = ''  # Used to store new card information
+        self.new_name = ''
+        self.new_balance = ''
+        self.initUI()  # init UI
+
+    # Initialize the UI interface
+    def initUI(self):
+        '''Set location, title and icon'''
+        # Set the position and size of the window
+        # (pos_X, pos_Y, length, height)
+        self.setGeometry(self.pos_X, self.pos_Y, self.length, self.height)
+
+        # Set the title of the window
+        self.setWindowTitle(self.title)
+
+        # Set the icon of the window (if any)
+        self.setWindowIcon(QIcon('./Resources/Icon2.png'))
+        '''Card number, only display can not be modified'''
+        self.id_text = QLabel(self)
+        self.id_text.resize(70, 30)
+        self.id_text.move(40, 40)
+        self.id_text.setText('<h3>卡号:</h3>')
+
+        self.id_box = QLineEdit(self)
+        self.id_box.resize(150, 30)
+        self.id_box.move(110, 40)
+        self.id_box.setPlaceholderText('请刷卡读取卡号或输入新增的卡号')
+        self.id_box.setToolTip('请刷卡读取卡号或输入新增的卡号')
+        '''User name, can be modified'''
+        self.name_text = QLabel(self)
+        self.name_text.resize(70, 30)
+        self.name_text.move(40, 110)
+        self.name_text.setText('<h3>用户:</h3>')
+
+        self.name_box = QLineEdit(self)
+        self.name_box.resize(150, 30)
+        self.name_box.move(110, 110)
+        self.name_box.setPlaceholderText('请输入用户名')
+        self.name_box.setToolTip('请输入用户名')
+        '''Balance, can be modified'''
+        self.balance_text = QLabel(self)
+        self.balance_text.resize(70, 30)
+        self.balance_text.move(40, 180)
+        self.balance_text.setText('<h3>余额:</h3>')
+
+        self.balance_box = QLineEdit(self)
+        self.balance_box.resize(150, 30)
+        self.balance_box.move(110, 180)
+        self.balance_box.setPlaceholderText('请输入余额')
+        self.balance_box.setToolTip('请输入余额，注意输入整数')
+        '''Cancel and confirm buttons'''
+        self.cancel_button = QPushButton('取消', self)
+        self.cancel_button.setToolTip('取消新建')
+        self.cancel_button.resize(100, 30)
+        self.cancel_button.move(35, 280)
+        self.cancel_button.clicked.connect(self.close)
+
+        self.confirm_button = QPushButton('确认', self)
+        self.confirm_button.setToolTip('确认并保存所有修改')
+        self.confirm_button.resize(100, 30)
+        self.confirm_button.move(165, 280)
+        self.confirm_button.clicked.connect(self.Re_confirm_button)
+
+    def Re_confirm_button(self):
+        # Get new card information
+        self.new_id = self.id_box.text()
+        self.new_name = self.name_box.text()
+        self.new_balance = self.balance_box.text()
+        # If the three information is not empty, store it in the database
+        if self.new_id != '' and self.new_name != '' and self.new_balance != '':
+            Database.Create_DB()
+            Database.Insert_user(int(self.new_id), self.new_name, int(self.new_balance))
+            Database.Close_database()
+            self.close()
+
+
+# 'Edit' interface
+class UI_EDIT(QWidget):
+    # Setting parameters
+    def __init__(self):
+        super().__init__()
+        self.pos_X = 475
+        self.pos_Y = 340
+        self.length = 300
+        self.height = 350
+        self.title = '修改'
+        self.select_id = ''  # Used to store new card information
+        self.new_name = ''
+        self.new_balance = ''
+        self.initUI()  # init UI
+
+    # Initialize the UI interface
+    def initUI(self):
+        '''Set location, title and icon'''
+        # Set the position and size of the window
+        # (pos_X, pos_Y, length, height)
+        self.setGeometry(self.pos_X, self.pos_Y, self.length, self.height)
+
+        # Set the title of the window
+        self.setWindowTitle(self.title)
+
+        # Set the icon of the window (if any)
+        self.setWindowIcon(QIcon('./Resources/Icon3.png'))
+        '''Card number, only display can not be modified'''
+        self.id_text = QLabel(self)
+        self.id_text.resize(70, 30)
+        self.id_text.move(40, 40)
+        self.id_text.setText('<h3>卡号:</h3>')
+
+        self.id_box = QLineEdit(self)
+        self.id_box.resize(150, 30)
+        self.id_box.move(110, 40)
+        self.id_box.setFocusPolicy(Qt.NoFocus)  # Make it uneditable
+        '''User name, can be modified'''
+        self.name_text = QLabel(self)
+        self.name_text.resize(70, 30)
+        self.name_text.move(40, 110)
+        self.name_text.setText('<h3>用户:</h3>')
+
+        self.name_box = QLineEdit(self)
+        self.name_box.resize(150, 30)
+        self.name_box.move(110, 110)
+        '''Balance, can be modified'''
+        self.balance_text = QLabel(self)
+        self.balance_text.resize(70, 30)
+        self.balance_text.move(40, 180)
+        self.balance_text.setText('<h3>余额:</h3>')
+
+        self.balance_box = QLineEdit(self)
+        self.balance_box.resize(150, 30)
+        self.balance_box.move(110, 180)
+        '''Cancel and confirm buttons'''
+        self.cancel_button = QPushButton('取消', self)
+        self.cancel_button.setToolTip('取消所有修改')
+        self.cancel_button.resize(100, 30)
+        self.cancel_button.move(35, 280)
+        self.cancel_button.clicked.connect(self.close)
+
+        self.confirm_button = QPushButton('确认', self)
+        self.confirm_button.setToolTip('确认并保存所有修改')
+        self.confirm_button.resize(100, 30)
+        self.confirm_button.move(165, 280)
+        self.confirm_button.clicked.connect(self.Re_confirm_button)
+
+    def Re_confirm_button(self):
+        self.select_id = self.id_box.text()
+        # Get new card information
+        self.new_name = self.name_box.text()
+        self.new_balance = self.balance_box.text()
+        # If the two information is not empty, store it in the database
+        if self.new_name != '' and self.new_balance != '':
+            Database.Create_DB()
+            Database.Update_user(int(self.select_id), self.new_name, int(self.new_balance))
+            Database.Close_database()
+            self.close()
 
 
 if __name__ == '__main__':
@@ -208,6 +412,12 @@ if __name__ == '__main__':
 
     # UI interface instantiation
     my_UI = UI()
+
+    # 'new' interface instantiation
+    my_UI_new = UI_NEW()
+
+    # 'edit' interface instantiation
+    my_UI_edit = UI_EDIT()
 
     # Show main interface
     my_UI.show()
