@@ -2,7 +2,7 @@
 import sys
 import Database
 from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QLineEdit, QLabel, QListWidget
+from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QLineEdit, QLabel, QListWidget, QMessageBox
 from PyQt5.QtCore import QTimer, QDateTime, Qt
 
 
@@ -148,25 +148,31 @@ class UI(QWidget):
         # Query the entered card number information from the database
         # Get the content in the text box
         search_id_text = self.search_box.text()
-        self.result_box.clear()  # Clear the contents of the list first
+        self.result_box.clear()  # Clear the contents of the two lists first
         self.information_box.clear()
-        if search_id_text:  # If the text box is not empty
-            search_id = int(search_id_text)
-            Database.Create_DB()  # connect DB to search
-            if Database.Select_user(search_id) is None:
-                # No information about this card was found
-                self.result_box.addItem('没有查到此卡的信息！')
-                self.search_result = False
-                self.select_result = False
-            else:
-                # Found the card information
-                # Then output the query result
-                self.result_box.addItem(search_id_text)
-                self.search_result = True
-                self.select_result = False
-            # Disconnect from the database
-            Database.Close_database()
-        else:
+        if search_id_text:  # if the text box is not empty
+            # Determine whether it is a number type
+            id_result = is_number(search_id_text)
+            if id_result is True:  # if it is a number type
+                search_id = int(search_id_text)
+                Database.Create_DB()  # connect DB to search
+                if Database.Select_user(search_id) is None:
+                    # No information about this card was found
+                    self.result_box.addItem('没有查到此卡的信息！')
+                    self.search_result = False
+                    self.select_result = False
+                else:
+                    # Found the card information
+                    # Then output the query result
+                    self.result_box.addItem(search_id_text)
+                    self.search_result = True
+                    self.select_result = False
+                # Disconnect from the database
+                Database.Close_database()
+            else:  # # if it is not a number type
+                self.search_box.clear()
+                self.Warning()
+        else:  # if the search box is empty
             self.result_box.addItem('请输入查询的卡号！')
             self.search_result = False
             self.select_result = False
@@ -234,6 +240,9 @@ class UI(QWidget):
         # 补充：响应事件
         pass
     '''
+
+    def Warning(self):
+        self.reply = QMessageBox.question(self, '警告！', '请确认帐号为纯数字！', QMessageBox.Yes, QMessageBox.Yes)
 
 
 # 'NEW' interface
@@ -317,10 +326,16 @@ class UI_NEW(QWidget):
         self.new_balance = self.balance_box.text()
         # If the three information is not empty, store it in the database
         if self.new_id != '' and self.new_name != '' and self.new_balance != '':
-            Database.Create_DB()
-            Database.Insert_user(int(self.new_id), self.new_name, int(self.new_balance))
-            Database.Close_database()
-            self.close()
+            if is_number(self.new_id) is True and is_number(self.new_balance) is True:
+                Database.Create_DB()
+                Database.Insert_user(int(self.new_id), self.new_name, int(self.new_balance))
+                Database.Close_database()
+                self.close()
+            else:
+                self.Warning()
+
+    def Warning(self):
+        self.reply = QMessageBox.question(self, '警告！', '请确认卡号/余额为纯数字！', QMessageBox.Yes, QMessageBox.Yes)
 
 
 # 'Edit' interface
@@ -398,10 +413,28 @@ class UI_EDIT(QWidget):
         self.new_balance = self.balance_box.text()
         # If the two information is not empty, store it in the database
         if self.new_name != '' and self.new_balance != '':
-            Database.Create_DB()
-            Database.Update_user(int(self.select_id), self.new_name, int(self.new_balance))
-            Database.Close_database()
-            self.close()
+            if is_number(self.new_balance) is True:
+                Database.Create_DB()
+                Database.Update_user(int(self.select_id), self.new_name, int(self.new_balance))
+                Database.Close_database()
+                self.close()
+            else:
+                self.Warning()
+
+    def Warning(self):
+        self.reply = QMessageBox.question(self, '警告！', '请确认余额为纯数字！', QMessageBox.Yes, QMessageBox.Yes)
+
+
+def is_number(s):
+    '''
+    Function: is_number(s)
+    Usage: Enter a string of characters to determine whether it is a number
+    '''
+    try:
+        int(s)
+        return True
+    except ValueError:
+        return False
 
 
 if __name__ == '__main__':
