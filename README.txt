@@ -16,23 +16,29 @@ Instructions for use:
 File tree directory:
 
 - - - - - - - - - - - - - - - - - - - -
-Project
+Project File
 
+   | - database.db
+   |
    | - Database.py
    |
    | - Manage.py
    |
-   | - ****.py
-   |
-   | - database.db
+   | - User.py
    |
    | - README.txt
    |
    | - Resources
    |
-   |       | - Icon1.png
+   |       | - Icon File
    |       |
-   |       | - ****.png
+   |       |     | - Icon1.png
+   |       |     |
+   |       |     | - Icon2.png
+   |       |     |
+   |       |     | - Icon3.png
+   |       |
+   |
 
 - - - - - - - - - - - - - - - - - - - -
 
@@ -68,3 +74,7 @@ Note:
 
 ==================================================
 ==================================================
+
+
+
+
