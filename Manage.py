@@ -33,7 +33,7 @@ class UI(QWidget):
         self.setWindowTitle(self.title)
 
         # Set the icon of the window (if any)
-        self.setWindowIcon(QIcon('./Resources/Icon1.png'))
+        self.setWindowIcon(QIcon('./Resources/Icon/Icon1.png'))
         '''First line, title and time'''
         # Position: Upper left corner
         # Usage: Show title
@@ -272,7 +272,7 @@ class UI_NEW(QWidget):
         self.setWindowTitle(self.title)
 
         # Set the icon of the window (if any)
-        self.setWindowIcon(QIcon('./Resources/Icon2.png'))
+        self.setWindowIcon(QIcon('./Resources/Icon/Icon2.png'))
         '''Card number, only display can not be modified'''
         self.id_text = QLabel(self)
         self.id_text.resize(70, 30)
@@ -370,7 +370,7 @@ class UI_EDIT(QWidget):
         self.setWindowTitle(self.title)
 
         # Set the icon of the window (if any)
-        self.setWindowIcon(QIcon('./Resources/Icon3.png'))
+        self.setWindowIcon(QIcon('./Resources/Icon/Icon3.png'))
         '''Card number, only display can not be modified'''
         self.id_text = QLabel(self)
         self.id_text.resize(70, 30)
