@@ -4,7 +4,7 @@ import Database
 from PyQt5.QtGui import QIcon, QPainter, QPixmap
 from PyQt5.QtWidgets import (QApplication, QWidget, QPushButton, QLabel,
                              QLineEdit, QHBoxLayout, QVBoxLayout, QProgressBar,
-                             QComboBox, QGraphicsOpacityEffect)
+                             QComboBox, QGraphicsOpacityEffect, QMessageBox)
 from PyQt5.QtCore import QTimer, Qt
 
 # Some global variables
@@ -181,14 +181,20 @@ class UI_guide2(QWidget):
     def Re_next(self):
         global User_number_g, User_id_g, flag
 
+        box_text = self.number_box.text()
+
         # if: if the box is empty, wait for insert
-        if self.number_box.text() == '':
-            pass
+        if box_text == '':
+            self.Warning(2)
+
+        # elif: if the text in the box is not a pure number
+        elif (self.is_number(box_text)) is False:
+            self.Warning(1)
+
         # else: if the box get the number, next one
         else:
             max_user = User_number_g  # the max of self.now_number
-            User_id_g[self.now_number - 1] = int(
-                self.number_box.text())  # Store id
+            User_id_g[self.now_number - 1] = int(box_text)  # Store id
 
             self.number_box.clear()  # clear
             self.number_box.setFocus()  # wait for next insert
@@ -205,6 +211,24 @@ class UI_guide2(QWidget):
                 # Draw the main UI interface according to the input
                 self.Draw_UI()
                 my_UI.show()
+
+    def is_number(self, s):
+        '''
+        Function: is_number(s)
+        Usage: Enter a string of characters to determine whether it is a number
+        '''
+        try:
+            int(s)
+            return True
+        except ValueError:
+            return False
+
+    def Warning(self, i):
+        if i == 1:
+            self.reply = QMessageBox.question(self, '警告！', '请确认帐号为纯数字！', QMessageBox.Yes, QMessageBox.Yes)
+        elif i == 2:
+            self.reply = QMessageBox.question(self, '警告！', '请输入账号！', QMessageBox.Yes, QMessageBox.Yes)
+        self.number_box.setFocus()
 
     def Draw_UI(self):
         global User_number_g, User_id_g
