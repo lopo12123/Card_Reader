@@ -175,8 +175,8 @@ if __name__ == '__main__':
     # Select_all()
     # Delete_user()
     # Update_one(922580530, 2500)
-    Insert_user(1, 'test1', 2000)
+    '''Insert_user(1, 'test1', 2000)
     Insert_user(2, 'test2', 2000)
     Insert_user(3, 'test3', 2000)
-    Insert_user(4, 'test4', 2000)
+    Insert_user(4, 'test4', 2000)'''
     Close_database()
