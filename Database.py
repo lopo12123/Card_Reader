@@ -32,6 +32,14 @@ def Create_user():  # checked
             BALANCE INT NOT NULL
         );''')
 
+    my_cursor.execute('''
+        CREATE TABLE IF NOT EXISTS SETTING(
+            NUMBER INT PRIMARY KEY NOT NULL,
+            MY_MAX INT NOT NULL,
+            MY_MIN INT NOT NULL,
+            MY_LIMIT INT NOT NULL
+        );''')
+
 
 def Insert_user(user_id, user_name, user_balance):  # checked
     '''
@@ -91,8 +99,16 @@ def Select_all():
     '''
 
     my_cursor.execute('''SELECT * FROM USER;''')
-    return my_cursor.fetchall()
     # print(my_cursor.fetchall())
+    return my_cursor.fetchall()
+
+
+def Update_one(user_id, new_balance):  # checked
+    update_id = user_id
+    update_balance = new_balance
+    my_cursor.execute(
+        '''UPDATE USER SET BALANCE = ? WHERE ID = ?;''',
+        (update_balance, update_id))
 
 
 def Update_user(user_id, new_name, new_balance):  # checked
@@ -112,6 +128,18 @@ def Update_user(user_id, new_name, new_balance):  # checked
     my_cursor.execute(
         '''UPDATE USER SET NAME = ?, BALANCE = ? WHERE ID = ?;''',
         (update_name, update_balance, update_id))
+
+
+def Get_Setting():
+    my_cursor.execute('''SELECT * FROM SETTING;''')
+    # print(my_cursor.fetchall())
+    return my_cursor.fetchall()
+
+
+def New_Setting(new_max, new_min, new_limit):
+    my_cursor.execute(
+        '''UPDATE SETTING SET MY_MAX = ?, MY_MIN = ?, MY_LIMIT = ? WHERE NUMBER = ?;''',
+        (new_max, new_min, new_limit, 1))
 
 
 def Close_database():  # checked
@@ -137,12 +165,18 @@ if __name__ == '__main__':
     '''
 
     # test
-    Create_DB()
-    Create_user()
+    Create_DB()  # connect DB
+    Create_user()  # create sheet
     '''
     Insert_user(1, 'one', 111)
     Insert_user(2, 'two', 222)
     Insert_user(3, 'three', 333)
     '''
-    Select_all()
+    # Select_all()
+    # Delete_user()
+    # Update_one(922580530, 2500)
+    Insert_user(1, 'test1', 2000)
+    Insert_user(2, 'test2', 2000)
+    Insert_user(3, 'test3', 2000)
+    Insert_user(4, 'test4', 2000)
     Close_database()
