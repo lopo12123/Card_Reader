@@ -92,8 +92,7 @@ class UI_guide1(QWidget):
         self.check_button.resize(100, 50)
         self.check_button.move(160, 250)
         self.check_button.setStyleSheet(
-            'QPushButton{border-image: url(./Resources/Background/Check.png)}'
-        )
+            'QPushButton{border-image: url(./Resources/Background/Check.png)}')
         self.check_button.clicked.connect(self.Re_check)
 
     def Re_cancel(self):
@@ -161,7 +160,8 @@ class UI_guide2(QWidget):
         self.title_text.move(125, 20)
 
         # numebr text
-        self.number_text = QLabel('<h2>请输入第' + str(self.now_number) + '个用户:</h2>', self)
+        self.number_text = QLabel(
+            '<h2>请输入第' + str(self.now_number) + '个用户:</h2>', self)
         self.number_text.setAlignment(Qt.AlignCenter)
         self.number_text.resize(200, 40)
         self.number_text.move(50, 100)
@@ -181,29 +181,37 @@ class UI_guide2(QWidget):
     def Re_next(self):
         global User_number_g, User_id_g, flag
 
-        max_user = User_number_g  # the max of self.now_number
-        User_id_g[self.now_number - 1] = int(self.number_box.text())  # Store id
+        # if: if the box is empty, wait for insert
+        if self.number_box.text() == '':
+            pass
+        # else: if the box get the number, next one
+        else:
+            max_user = User_number_g  # the max of self.now_number
+            User_id_g[self.now_number - 1] = int(
+                self.number_box.text())  # Store id
 
-        self.number_box.clear()  # clear
-        self.number_box.setFocus()  # wait for next insert
+            self.number_box.clear()  # clear
+            self.number_box.setFocus()  # wait for next insert
 
-        if self.now_number < max_user:
-            self.now_number += 1  # count ++
-            self.number_text.setText('<h2>请输入第' + str(self.now_number) + '个用户:</h2>')  # change the title
-            if self.now_number == max_user:
-                self.next_button.setText('确认')
-        elif self.now_number == max_user:  # end insert
-            # print(User_id_g)
-            self.close()
-            # Draw the main UI interface according to the input
-            self.Draw_UI()
-            my_UI.show()
+            if self.now_number < max_user:
+                self.now_number += 1  # count ++
+                self.number_text.setText('<h2>请输入第' + str(self.now_number) +
+                                         '个用户:</h2>')  # change the title
+                if self.now_number == max_user:
+                    self.next_button.setText('确认')
+            elif self.now_number == max_user:  # end insert
+                # print(User_id_g)
+                self.close()
+                # Draw the main UI interface according to the input
+                self.Draw_UI()
+                my_UI.show()
 
     def Draw_UI(self):
         global User_number_g, User_id_g
         line_number = User_number_g  # how many lines need to be added
 
         my_UI.New_line(line_number)
+        my_UI.Set_range()
 
         # print(User_number_g)
         # print(User_id_g)
@@ -234,16 +242,6 @@ class UI(QWidget):
         self.height = 600
         self.title = '用户界面'
 
-        # about team set
-        self.team_insert = False  # Are you currently entering a team
-        self.team_now = 0
-        self.team_set = False  # undo
-
-        self.team_A_id = None  # 删
-        self.team_B_id = None
-        self.team_C_id = None
-        self.team_D_id = None
-
         # about operate
         self.step = -1
         self.player1_id = None
@@ -252,22 +250,19 @@ class UI(QWidget):
         self.number = 0
 
         # about display
-        '''
-        h_layout_group(QHBoxLayout)
-         * (player: 4/5/6/7/8) A QHBoxLayout layout contains a label and a bar
-         * (player: 9/10/11/12/13/14/15/16) A QHBoxLayout layout contains 2 labels and 2 bars
-        '''
+        ''' h_layout_group(QHBoxLayout)
+         * (player: 4/5/6/7/8)
+         A QHBoxLayout layout contains a label and a bar
+         * (player: 9/10/11/12/13/14/15/16)
+         A QHBoxLayout layout contains 2 labels and 2 bars '''
         self.h_layout_group = []
         self.label_group = []
         self.bar_group = []
+        self.value_group = []
 
         self.my_max = None
         self.my_min = None
         self.my_limit = None
-        self.A_value = 0  # default value
-        self.B_value = 0
-        self.C_value = 0
-        self.D_value = 0
 
         self.initUI()  # init UI
 
@@ -306,32 +301,12 @@ class UI(QWidget):
         self.message_box_result = QLabel('Result', self)
         self.message_box_result.setPixmap(QPixmap(Image.Success))
 
-        # Four labels show team name
-        '''self.label_A = None
-        self.label_A = QLabel('label A', self)
-        self.label_A.setPixmap(QPixmap(Image.Team_A))
-
-        self.label_B = QLabel('label B', self)
-        self.label_B.setPixmap(QPixmap(Image.Team_B))
-
-        self.label_C = QLabel('label C', self)
-        self.label_C.setPixmap(QPixmap(Image.Team_C))
-
-        self.label_D = QLabel('label D', self)
-        self.label_D.setPixmap(QPixmap(Image.Team_D))'''
-
         # The following four lines fill the label with the
         # background color to observe the size and position
-        # self.label_A].setStyleSheet('background-color: yellow')
+        # self.label_A.setStyleSheet('background-color: yellow')
         # self.label_B.setStyleSheet('background-color: yellow')
         # self.label_C.setStyleSheet('background-color: yellow')
         # self.label_D.setStyleSheet('background-color: yellow')
-
-        # Four progress bar are used to draw balance
-        '''self.box_A = QProgressBar()
-        self.box_B = QProgressBar()
-        self.box_C = QProgressBar()
-        self.box_D = QProgressBar()'''
 
         # Three buttons: exit, setting and maximize
         self.button_close = QPushButton('', self)
@@ -364,34 +339,6 @@ class UI(QWidget):
         self.h_layout_head.addWidget(self.message_box_result)  # result
         self.h_layout_head.addStretch()
 
-        '''# line 2 - team A
-        self.h_layout_2 = QHBoxLayout()
-        self.h_layout_2.addWidget(self.label_A)
-        self.h_layout_2.addWidget(self.box_A)
-        # self.h_layout_2.setStretchFactor(self.label_A, 1)
-        # self.h_layout_2.setStretchFactor(self.box_A, 3)
-
-        # line 3 - team B
-        self.h_layout_3 = QHBoxLayout()
-        self.h_layout_3.addWidget(self.label_B)
-        self.h_layout_3.addWidget(self.box_B)
-        # self.h_layout_3.setStretchFactor(self.label_B, 1)
-        # self.h_layout_3.setStretchFactor(self.box_B, 3)
-
-        # line 4 - team C
-        self.h_layout_4 = QHBoxLayout()
-        self.h_layout_4.addWidget(self.label_C)
-        self.h_layout_4.addWidget(self.box_C)
-        # self.h_layout_4.setStretchFactor(self.label_C, 1)
-        # self.h_layout_4.setStretchFactor(self.box_C, 3)
-
-        # line 5 - team D
-        self.h_layout_5 = QHBoxLayout()
-        self.h_layout_5.addWidget(self.label_D)
-        self.h_layout_5.addWidget(self.box_D)
-        # self.h_layout_5.setStretchFactor(self.label_D, 1)
-        # self.h_layout_5.setStretchFactor(self.box_D, 3)'''
-
         # line 6 - three buttons
         self.h_layout_end = QHBoxLayout()
         self.h_layout_end.addStretch()
@@ -410,28 +357,12 @@ class UI(QWidget):
 
         # add the team lines
         # All additions are placed in UI_guide2.Draw_UI
-        '''self.v_layout.addStretch(2)
-        self.v_layout.addLayout(self.h_layout_2)  # team A
-        self.v_layout.addStretch(2)
-        self.v_layout.addLayout(self.h_layout_3)  # team B
-        self.v_layout.addStretch(2)
-        self.v_layout.addLayout(self.h_layout_4)  # team C
-        self.v_layout.addStretch(2)
-        self.v_layout.addLayout(self.h_layout_5)  # team D'''
 
-        ''' The bottom three buttons
-        self.v_layout.addStretch(1)
-        self.v_layout.addLayout(self.h_layout_end)  # buttons
-        self.v_layout.addStretch(0.7) '''
-
-        # self.New_line(8) - # self.New_line(num): num means there are 'num' players
+        # self.New_line(num): num means there are 'num' players
 
         # Set the form layout
         self.setLayout(self.v_layout)
         self.focus_box.setFocus()
-
-        # self.Set_limit()  # set limits
-        # self.Change_value()  # update the progress bar
 
     def New_line(self, num):
         # 'num' indicates how many players are there
@@ -459,7 +390,7 @@ class UI(QWidget):
             self.v_layout.addStretch(1)
             self.v_layout.addLayout(self.h_layout_end)
             self.v_layout.addStretch(0.7)
-        
+
         elif 8 < num <= 16:  # 9-16
             if (num % 2) == 0:  # even
                 # Every step of the cycle create a new line layout
@@ -505,7 +436,7 @@ class UI(QWidget):
                     team_bar_2 = QProgressBar()
                     self.bar_group.append(team_bar_2)
 
-                    if(i == int((num + 1) / 2) - 1):
+                    if (i == int((num + 1) / 2) - 1):
                         # Set the transparency to 100% so that
                         # it is not displayed but takes place
                         op1 = QGraphicsOpacityEffect()
@@ -533,33 +464,35 @@ class UI(QWidget):
             self.v_layout.addLayout(self.h_layout_end)
             self.v_layout.addStretch(0.7)
 
-    def Set_limit(self):
-        # 全改
+    def Set_range(self):
+        global User_id_g
+
         # Set maximum, minimum and limit
-        Database.Create_DB()  # get data
+        Database.Create_DB()  # get max / min / limit
         result = Database.Get_Setting()
         self.my_max = result[0][1]
         self.my_min = result[0][2]
         self.my_limit = result[0][3]
         Database.Close_database()
 
-        self.box_A.setRange(self.my_min, self.my_max)  # set limit
-        self.box_B.setRange(self.my_min, self.my_max)
-        self.box_C.setRange(self.my_min, self.my_max)
-        self.box_D.setRange(self.my_min, self.my_max)
+        # Set Limit(max / min)
+        for item in self.bar_group:
+            item.setRange(self.my_min, self.my_max)  # set range
+            item.setFormat('%v')  # set the display format
 
-        self.box_A.setFormat('%v')  # set format
-        self.box_B.setFormat('%v')
-        self.box_C.setFormat('%v')
-        self.box_D.setFormat('%v')
+            # item.setValue((self.bar_group.index(item) + 1) * 100)
 
-    def Change_value(self):
-        # 全改
-        # Update the progress bar
-        self.box_A.setValue(self.A_value)
-        self.box_B.setValue(self.B_value)
-        self.box_C.setValue(self.C_value)
-        self.box_D.setValue(self.D_value)
+        # Get Value (in the 'self.value_group')
+        Database.Create_DB()
+        for item in User_id_g:
+            if item != 0:  # the player`s id cant be '0'
+                current_value = Database.Select_user(item)
+                self.value_group.append(current_value[2])
+        Database.Close_database()
+
+        # Set Value
+        for item in self.value_group:
+            self.bar_group[self.value_group.index(item)].setValue(item)
 
     def Re_close(self):
         # Close the current window
@@ -591,7 +524,7 @@ class UI(QWidget):
         my_background = QPixmap(Image.Background)
         painter.drawPixmap(self.rect(), my_background)
 
-    def keyPressEvent(self, event):
+    def keyPressEvent(self, event):  # 改
         '''
         Function: keyPressEvent(self, event)
         Usage: Add response to keyboard events
@@ -605,205 +538,7 @@ class UI(QWidget):
               Enter - 16777220
               Backspace - 16777219 *
         '''
-        # team_set is False - unset
-        # Start insert the card number and
-        # change the focus on which control
-        '''
-        if self.team_set is False and self.team_insert is False and event.key(
-        ) == 46:
-            self.team_insert = True
-            self.team_box.clear()
-
-        # Inserting and Get which user the input key represents
-        if self.team_set is False and self.team_insert is True:
-            if event.key() == 16777266:
-                self.team_now = 1  # team A
-                self.team_box.setFocus()
-            elif event.key() == 16777267:
-                self.team_now = 2
-                self.team_box.setFocus()
-            elif event.key() == 16777268:
-                self.team_now = 3
-                self.team_box.setFocus()
-            elif event.key() == 16777269:
-                self.team_now = 4
-                self.team_box.setFocus()
-
-        # End input and handle events
-        if self.team_set is False and self.team_insert is True and event.key(
-        ) == 16777220:
-            self.team_insert = False
-            self.focus_box.setFocus()  # disable lineedit box
-            if self.team_now == 1:  # set four team id
-                self.team_A_id = int(self.team_box.text())
-                self.team_box.clear()
-            elif self.team_now == 2:
-                self.team_B_id = int(self.team_box.text())
-                self.team_box.clear()
-            elif self.team_now == 3:
-                self.team_C_id = int(self.team_box.text())
-                self.team_box.clear()
-            elif self.team_now == 4:
-                self.team_D_id = int(self.team_box.text())
-                self.team_box.clear()
-            if self.team_A_id:  # all is set
-                if self.team_B_id:
-                    if self.team_C_id:
-                        if self.team_D_id:
-                            self.team_set = True  # all the team is set well
-                            self.Set_team()'''
-
-        # team_set is True - set well
-        if self.team_set is True:
-            if self.step == -1:  # step-1: clear all and wait for insert
-                self.team_box.clear()
-                self.team_box.setFocus()
-                self.step = 0
-            if self.step == 0:  # step0: get the player1`s id / know add or sub
-                if event.key() == 16777264:  # add
-                    self.symbol = 1
-                    self.focus_box.setFocus()
-                    self.player1_id = int(self.team_box.text())
-                    self.team_box.clear()
-                    self.step = 1
-                elif event.key() == 16777265:  # sub
-                    self.symbol = -1
-                    self.focus_box.setFocus()
-                    self.player1_id = int(self.team_box.text())
-                    self.team_box.clear()
-                    self.step = 1
-            if self.step == 1:  # step1: get the player2`s id
-                if event.key() == 16777266:
-                    self.player2_id = self.team_A_id
-                    self.team_box.setFocus()
-                    self.step = 2
-                elif event.key() == 16777267:
-                    self.player2_id = self.team_B_id
-                    self.team_box.setFocus()
-                    self.step = 2
-                elif event.key() == 16777268:
-                    self.player2_id = self.team_C_id
-                    self.team_box.setFocus()
-                    self.step = 2
-                elif event.key() == 16777269:
-                    self.player2_id = self.team_D_id
-                    self.team_box.setFocus()
-                    self.step = 2
-            if self.step == 2:  # step2: get the number to add / sub
-                if event.key() == 16777220:
-                    self.number = int(self.team_box.text())
-                    self.team_box.clear()
-                    self.focus_box.setFocus()
-                    self.Solve()
-                    self.step = -1
-
-    def Set_team(self):
-        # set the initial value of the four teams
-        Database.Create_DB()  # connect
-        self.A_value = Database.Select_user(self.team_A_id)[2]  # team A
-        self.B_value = Database.Select_user(self.team_B_id)[2]  # team B
-        self.C_value = Database.Select_user(self.team_C_id)[2]  # team C
-        self.D_value = Database.Select_user(self.team_D_id)[2]  # team D
-        Database.Close_database()  # disconnect
-
-        self.Change_value()  # update
-
-    def Solve(self):
-        '''
-        self.step = -1
-        self.player1_id = None
-        self.symbol = 1  # take - '1'; give - '-1'
-        self.player2_id = None
-        self.number = 0
-        '''
-        p1, p2 = self.sort()
-
-        # print(p1, p2)
-        # print('----')
-
-        # Single limit exceeded
-        if self.number > self.my_limit:
-            self.message_box_result.setPixmap(QPixmap(Image.Fail))
-        # Insufficient balance
-        elif self.number > self.A_value or self.number > self.B_value or self.number > self.C_value or self.number > self.D_value:
-            self.message_box_result.setPixmap(QPixmap(Image.Fail))
-        # p1 Take p2
-        elif self.symbol == 1:  # p1 <- p2
-            self.message_box_result.setPixmap(QPixmap(Image.Success))
-            # player 1
-            if p1 == 1:  # p1 = team A
-                self.A_value += self.number
-            elif p1 == 2:  # p1 = team B
-                self.B_value += self.number
-            elif p1 == 3:  # p1 = team C
-                self.C_value += self.number
-            elif p1 == 4:  # p1 = team D
-                self.D_value += self.number
-            # player 2
-            if p2 == 1:  # p1 = team A
-                self.A_value -= self.number
-            elif p2 == 2:  # p1 = team B
-                self.B_value -= self.number
-            elif p2 == 3:  # p1 = team C
-                self.C_value -= self.number
-            elif p2 == 4:  # p1 = team D
-                self.D_value -= self.number
-        # p1 Give p2
-        elif self.symbol == -1:  # p1 -> p2
-            self.message_box_result.setPixmap(QPixmap(Image.Success))
-            # player 1
-            if p1 == 1:  # p1 = team A
-                self.A_value -= self.number
-            elif p1 == 2:  # p1 = team B
-                self.B_value -= self.number
-            elif p1 == 3:  # p1 = team C
-                self.C_value -= self.number
-            elif p1 == 4:  # p1 = team D
-                self.D_value -= self.number
-            # player 2
-            if p2 == 1:  # p1 = team A
-                self.A_value += self.number
-            elif p2 == 2:  # p1 = team B
-                self.B_value += self.number
-            elif p2 == 3:  # p1 = team C
-                self.C_value += self.number
-            elif p2 == 4:  # p1 = team D
-                self.D_value += self.number
-
-        # Update the progress bar
-        self.Change_value()
-
-    def sort(self):
-        player1 = None
-        player2 = None
-
-        if self.player1_id == self.team_A_id:  # team A
-            player1 = 1
-            self.message_box_player1.setPixmap(QPixmap(Image.Team_A))
-        elif self.player1_id == self.team_B_id:  # team B
-            player1 = 2
-            self.message_box_player1.setPixmap(QPixmap(Image.Team_B))
-        elif self.player1_id == self.team_C_id:  # team C
-            player1 = 3
-            self.message_box_player1.setPixmap(QPixmap(Image.Team_C))
-        elif self.player1_id == self.team_D_id:  # team D
-            player1 = 4
-            self.message_box_player1.setPixmap(QPixmap(Image.Team_D))
-
-        if self.player2_id == self.team_A_id:  # team A
-            player2 = 1
-            self.message_box_player2.setPixmap(QPixmap(Image.Team_A))
-        elif self.player2_id == self.team_B_id:  # team B
-            player2 = 2
-            self.message_box_player2.setPixmap(QPixmap(Image.Team_B))
-        elif self.player2_id == self.team_C_id:  # team C
-            player2 = 3
-            self.message_box_player2.setPixmap(QPixmap(Image.Team_C))
-        elif self.player2_id == self.team_D_id:  # team D
-            player2 = 4
-            self.message_box_player2.setPixmap(QPixmap(Image.Team_D))
-
-        return player1, player2
+        pass
 
 
 class UI_setting(QWidget):
@@ -912,7 +647,7 @@ class UI_setting(QWidget):
         Database.New_Setting(new_max, new_min, new_limit)
         Database.Close_database()  # disconnect
 
-        my_UI.Set_limit()
+        my_UI.Set_range()
 
         self.close()
 
