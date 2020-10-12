@@ -1,3 +1,17 @@
+    def keyPressEvent(self, event):
+        '''
+        Function: keyPressEvent(self, event)
+        Usage: Add response to keyboard events
+        Note: F1 - 16777264
+              F2 - 16777265
+              F3 - 16777266
+              F4 - 16777267
+              F5 - 16777268
+              F6 - 16777269
+              '.' - 46
+              Enter - 16777220
+              Backspace - 16777219 *
+        '''
         # team_set is False - unset
         # Start insert the card number and
         # change the focus on which control
