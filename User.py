@@ -4,8 +4,8 @@ import Database
 from PyQt5.QtGui import QIcon, QPainter, QPixmap
 from PyQt5.QtWidgets import (QApplication, QWidget, QPushButton, QLabel,
                              QLineEdit, QHBoxLayout, QVBoxLayout, QProgressBar,
-                             QComboBox, QGraphicsOpacityEffect, QMessageBox)
-from PyQt5.QtCore import QTimer, Qt
+                             QComboBox, QGraphicsOpacityEffect, QMessageBox, QListWidget)
+from PyQt5.QtCore import QTimer, Qt, QTime, QDate, QDateTime
 
 # Some global variables
 User_number_g = 0  # Total number of users / default 0
@@ -21,10 +21,23 @@ class Image:
     Background = './Resources/Background/Background.png'  # Background
     Success = './Resources/Background/Success.png'  # Success
     Fail = './Resources/Background/Fail.png'  # Fail
-    Team_A = './Resources/Background/Team_A.png'  # Team A / B / C / D
-    Team_B = './Resources/Background/Team_B.png'
-    Team_C = './Resources/Background/Team_C.png'
-    Team_D = './Resources/Background/Team_D.png'
+    Team = [] * 16  # Team label (1 - 16)
+    Team.append('./Resources/Background/Team1.jpg')  # Team[0]
+    Team.append('./Resources/Background/Team2.jpg')
+    Team.append('./Resources/Background/Team3.jpg')
+    Team.append('./Resources/Background/Team4.jpg')
+    Team.append('./Resources/Background/Team5.jpg')
+    Team.append('./Resources/Background/Team6.jpg')
+    Team.append('./Resources/Background/Team7.jpg')
+    Team.append('./Resources/Background/Team8.jpg')
+    Team.append('./Resources/Background/Team9.jpg')
+    Team.append('./Resources/Background/Team10.jpg')
+    Team.append('./Resources/Background/Team11.jpg')
+    Team.append('./Resources/Background/Team12.jpg')
+    Team.append('./Resources/Background/Team13.jpg')
+    Team.append('./Resources/Background/Team14.jpg')
+    Team.append('./Resources/Background/Team15.jpg')
+    Team.append('./Resources/Background/Team16.jpg')
     Unknown = './Resources/Background/Unknown.png'  # symbol '?'
     Hand = './Resources/Background/Hand.png'  # symbol 'hand'
 
@@ -54,7 +67,7 @@ class UI_guide1(QWidget):
         self.setWindowIcon(QIcon(Image.Icon2))
 
         # Set window borderless
-        # self.setWindowFlags(Qt.FramelessWindowHint)
+        self.setWindowFlags(Qt.FramelessWindowHint)
 
         # title image
         self.title_text = QLabel(self)
@@ -150,7 +163,7 @@ class UI_guide2(QWidget):
         self.setWindowIcon(QIcon(Image.Icon2))
 
         # Set window borderless
-        # self.setWindowFlags(Qt.FramelessWindowHint)
+        self.setWindowFlags(Qt.FramelessWindowHint)
 
         # title image
         self.title_text = QLabel(self)
@@ -175,7 +188,7 @@ class UI_guide2(QWidget):
         self.next_button = QPushButton('下一个', self)
         self.next_button.resize(100, 50)
         self.next_button.move(160, 250)
-        # self.check_button.setStyleSheet('QPushButton{border-image: url(./Resources/Background/Check.png)}')
+        # self.check_button.setStyleSheet('QPushButton{border-image: url(?)}')
         self.next_button.clicked.connect(self.Re_next)
 
     def Re_next(self):
@@ -208,8 +221,12 @@ class UI_guide2(QWidget):
             elif self.now_number == max_user:  # end insert
                 # print(User_id_g)
                 self.close()
+
                 # Draw the main UI interface according to the input
                 self.Draw_UI()
+                # set the focus on the LineEdit 'team_box' to accept the card id
+                my_UI.team_box.setFocus()
+                my_UI.step = 0
                 my_UI.show()
 
     def is_number(self, s):
@@ -268,10 +285,10 @@ class UI(QWidget):
 
         # about operate
         self.step = -1
-        self.player1_id = None
-        self.symbol = 1  # take - '1'; give - '-1'
-        self.player2_id = None
-        self.number = 0
+        self.player1_id = -1  # player`id cant be -1
+        self.player2_id = -1  # if it == -1 -> didn`t get this id
+        self.symbol = 0  # take - '1'; give - '-1'
+        self.number = -1  # how much money to take
 
         # about display
         ''' h_layout_group(QHBoxLayout)
@@ -304,14 +321,15 @@ class UI(QWidget):
 
         # Set the icon of the window (if any)
         self.setWindowIcon(QIcon(Image.Icon1))
-        '''Add various controls'''
-        self.team_box = QLineEdit(self)
+
+        self.team_box = QLineEdit(self)  # a LineEdit to accept the card id
         self.team_box.resize(100, 30)
         self.team_box.move(-120, -50)  # move out of the screen
-        self.focus_box = QLabel(self)
+        self.focus_box = QLabel(self)  # a label to set screen`s focus
         self.focus_box.resize(10, 10)
         self.focus_box.move(-20, -20)  # move out of the screen
 
+        '''Add various controls'''
         # Four labels display prompt information
         self.message_box_player1 = QLabel('Left box', self)
         self.message_box_player1.setPixmap(QPixmap(Image.Unknown))
@@ -322,17 +340,26 @@ class UI(QWidget):
         self.message_box_player2 = QLabel('Right box', self)
         self.message_box_player2.setPixmap(QPixmap(Image.Unknown))
 
+        self.message_box_number = QLabel('', self)
+        self.message_box_number.setMinimumSize(50, 50)
+        self.message_box_number.setPixmap(QPixmap(Image.Unknown))
+
         self.message_box_result = QLabel('Result', self)
         self.message_box_result.setPixmap(QPixmap(Image.Success))
 
-        # The following four lines fill the label with the
-        # background color to observe the size and position
-        # self.label_A.setStyleSheet('background-color: yellow')
-        # self.label_B.setStyleSheet('background-color: yellow')
-        # self.label_C.setStyleSheet('background-color: yellow')
-        # self.label_D.setStyleSheet('background-color: yellow')
-
         # Three buttons: exit, setting and maximize
+        self.information_box = QLabel('<h3>输入玩家1并选择加减</h3>', self)  # information
+        self.information_box.setAlignment(Qt.AlignCenter)
+        self.information_box.setMinimumSize(50, 60)
+
+        self.history_list = QListWidget(self)  # history
+        self.history_list.setFocusPolicy(Qt.NoFocus)
+        self.history_list.setMinimumSize(320, 60)
+        self.history_list.setMaximumHeight(90)
+        # self.history_list.addItem('日期:' + QDate.currentDate().toString(Qt.ISODate))  # date
+        # self.history_list.addItem('时间:' + QTime.currentTime().toString())  # time
+        self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 进入程序')
+
         self.button_close = QPushButton('', self)
         self.button_close.setMinimumSize(40, 40)
         self.button_close.setStyleSheet(
@@ -360,11 +387,16 @@ class UI(QWidget):
         self.h_layout_head.addWidget(self.message_box_player1)  # player1
         self.h_layout_head.addWidget(self.message_box_action)  # action
         self.h_layout_head.addWidget(self.message_box_player2)  # player2
+        self.h_layout_head.addWidget(self.message_box_number)  # number
         self.h_layout_head.addWidget(self.message_box_result)  # result
         self.h_layout_head.addStretch()
 
         # line 6 - three buttons
         self.h_layout_end = QHBoxLayout()
+        self.h_layout_end.addStretch()
+        self.h_layout_end.addWidget(self.information_box)
+        self.h_layout_end.addStretch()
+        self.h_layout_end.addWidget(self.history_list)
         self.h_layout_end.addStretch()
         self.h_layout_end.addWidget(self.button_close)
         self.h_layout_end.addWidget(self.button_setting)
@@ -388,13 +420,16 @@ class UI(QWidget):
         self.setLayout(self.v_layout)
         self.focus_box.setFocus()
 
+    def set_focus(self):
+        self.focus_box.setFocus()
+
     def New_line(self, num):
         # 'num' indicates how many players are there
         if num <= 8:  # 4 / 5 / 6 / 7 / 8
             # Every step of the cycle create a new line layout
             for i in range(num):
                 team_label = QLabel('', self)  # team label
-                team_label.setPixmap(QPixmap(Image.Team_A))
+                team_label.setPixmap(QPixmap(Image.Team[i]))
                 self.label_group.append(team_label)
 
                 team_bar = QProgressBar()  # team progressbar
@@ -417,15 +452,18 @@ class UI(QWidget):
 
         elif 8 < num <= 16:  # 9-16
             if (num % 2) == 0:  # even
+                count = 0
                 # Every step of the cycle create a new line layout
                 # Each row contains information about two players
                 for i in range(int(num / 2)):
                     team_label_1 = QLabel('', self)  # team label
-                    team_label_1.setPixmap(QPixmap(Image.Team_A))
+                    team_label_1.setPixmap(QPixmap(Image.Team[count]))
+                    count += 1
                     self.label_group.append(team_label_1)
 
                     team_label_2 = QLabel('', self)
-                    team_label_2.setPixmap(QPixmap(Image.Team_A))
+                    team_label_2.setPixmap(QPixmap(Image.Team[count]))
+                    count += 1
                     self.label_group.append(team_label_2)
 
                     team_bar_1 = QProgressBar()  # team progressbar
@@ -441,16 +479,19 @@ class UI(QWidget):
                     team_layout.addWidget(team_bar_2)
                     self.h_layout_group.append(team_layout)
             elif (num % 2) == 1:  # odd
+                count = 0
                 # Every step of the cycle create a new line layout
                 # Each row contains information about two players
                 for i in range(int((num + 1) / 2)):
                     # team label
                     team_label_1 = QLabel('', self)
-                    team_label_1.setPixmap(QPixmap(Image.Team_A))
+                    team_label_1.setPixmap(QPixmap(Image.Team[count]))
+                    count += 1
                     self.label_group.append(team_label_1)
 
                     team_label_2 = QLabel('', self)
-                    team_label_2.setPixmap(QPixmap(Image.Team_A))
+                    team_label_2.setPixmap(QPixmap(Image.Team[count]))
+                    count += 1
                     self.label_group.append(team_label_2)
 
                     # team progressbar
@@ -504,9 +545,8 @@ class UI(QWidget):
             item.setRange(self.my_min, self.my_max)  # set range
             item.setFormat('%v')  # set the display format
 
-            # item.setValue((self.bar_group.index(item) + 1) * 100)
-
         # Get Value (in the 'self.value_group')
+        self.value_group = []
         Database.Create_DB()
         for item in User_id_g:
             if item != 0:  # the player`s id cant be '0'
@@ -514,9 +554,16 @@ class UI(QWidget):
                 self.value_group.append(current_value[2])
         Database.Close_database()
 
-        # Set Value
+        self.Set_value()
+
+    def Set_value(self):
+        # Set Valu: Modify the display and modify the contents of the database
+        i = 0
         for item in self.value_group:
-            self.bar_group[self.value_group.index(item)].setValue(item)
+            self.bar_group[i].setValue(item)  # self.value_group.index(item)
+            i += 1
+
+        # 改：增加对数据库数据的修改
 
     def Re_close(self):
         # Close the current window
@@ -531,8 +578,21 @@ class UI(QWidget):
         # Switch between normal size and full screen display
         if self.isMaximized():
             self.showNormal()
+            self.team_box.setFocus()
         else:
             self.showMaximized()
+            self.team_box.setFocus()
+
+    def is_number(self, s):
+        '''
+        Function: is_number(s)
+        Usage: Enter a string of characters to determine whether it is a number
+        '''
+        try:
+            int(s)
+            return True
+        except ValueError:
+            return False
 
     def paintEvent(self, event):
         '''
@@ -548,21 +608,151 @@ class UI(QWidget):
         my_background = QPixmap(Image.Background)
         painter.drawPixmap(self.rect(), my_background)
 
-    def keyPressEvent(self, event):  # 改
+    def keyPressEvent(self, event):
         '''
         Function: keyPressEvent(self, event)
         Usage: Add response to keyboard events
-        Note: F1 - 16777264
+        Note: key coding:
+              F1 - 16777264
               F2 - 16777265
               F3 - 16777266
               F4 - 16777267
               F5 - 16777268
               F6 - 16777269
               '.' - 46
-              Enter - 16777220
-              Backspace - 16777219 *
+              L-Enter - 16777220
+              R-Enter - 16777221
+              Backspace - 16777219
         '''
-        pass
+        # get the text in the 'team_box' then clear the box:
+        ''' if it`s valid, use it
+        if it`s invalid, ignore it '''
+        current_text = self.team_box.text()  # current text
+        result = self.is_number(current_text)  # if the text is a number
+
+        self.team_box.clear()
+
+        # Step 2: get the number(how much money to take)
+        if self.step == 2 and result is True:
+            if event.key() == 16777220 or event.key() == 16777221:  # press 'enter' to confirm
+                self.number = int(current_text)
+
+                self.Solve()
+                ''' * Reset all variables for the next read * -- not necessary
+                self.player1_id = -1
+                self.player2_id = -1
+                self.symbol = 0
+                self.number = -1 '''
+                self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 确认金额: ' + str(self.number))
+                self.history_list.addItem('操作完成')
+                self.history_list.scrollToBottom()
+
+                self.step = 0
+                self.change_info(0)
+
+        # Step 1: get the player2`s id
+        if self.step == 1 and result is True:
+            if event.key() == 16777220 or event.key() == 16777221:  # press 'enter' to confirm
+                self.player2_id = int(current_text)
+
+                p2 = chr(ord('A') + User_id_g.index(self.player2_id))
+                if self.symbol == 1:
+                    self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 确认玩家2: ' + p2)
+                    self.history_list.scrollToBottom()
+                elif self.symbol == -1:
+                    self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 确认玩家2: ' + p2)
+                    self.history_list.scrollToBottom()
+
+                self.step = 2
+                self.change_info(2)
+
+        # Step 0: know symbol`s value
+        #         press F1/F2 is also used to check the player1`s id
+        if self.step == 0 and result is True:
+            ''' 1 - now the text in 'team_box' is a number
+                2 - and 'step == 0' means it`s time to choose F1 / F2 '''
+            if event.key() == 16777264:  # key 'F1' - Add
+                self.symbol = 1
+                self.player1_id = int(current_text)
+
+                p1 = chr(ord('A') + User_id_g.index(self.player1_id))  # get p1`s code(ABCD....)
+                self.history_list.addItem('')
+                self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 确认玩家1: ' + p1)
+                self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 确认操作: 加')
+                self.history_list.scrollToBottom()
+                # go to next step
+                self.step = 1
+                self.change_info(1)
+            elif event.key() == 16777265:  # key 'F2' - Sub
+                self.symbol = -1
+                self.player1_id = int(current_text)
+
+                p1 = chr(ord('A') + User_id_g.index(self.player1_id))  # get p1`s code(ABCD....)
+                self.history_list.addItem('')
+                self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 确认玩家1: ' + p1)
+                self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 确认操作: 减')
+                self.history_list.scrollToBottom()
+                # go to next step
+                self.step = 1
+                self.change_info(1)
+
+    def change_info(self, num):
+        if num == 0:
+            self.information_box.setText('<h3>输入玩家1并选择加减</h3>')
+        elif num == 1:
+            self.information_box.setText('<h3>输入玩家2并确认</h3>')
+        elif num == 2:
+            self.information_box.setText('<h2>请输入金额</h2>')
+        else:
+            pass
+
+    def Solve(self):
+        global User_id_g
+
+        # Find out p1 and p2`s index in 'User_id_g[]'
+        for item in User_id_g:
+            if item == self.player1_id:
+                p1_index = User_id_g.index(item)
+            if item == self.player2_id:
+                p2_index = User_id_g.index(item)
+
+        # Get the balance of current player 1 and player 2
+        p1_current_value = self.value_group[p1_index]
+        p2_current_value = self.value_group[p2_index]
+
+        # 1 The information prompt area displays Player 1 and Player 2
+        self.message_box_player1.setPixmap(QPixmap(Image.Team[p1_index]))  # p1
+        self.message_box_player2.setPixmap(QPixmap(Image.Team[p2_index]))  # p2
+        self.message_box_number.setText('<h2>' + str(self.number) + '</h2>')  # number
+        self.message_box_number.setAlignment(Qt.AlignCenter)
+
+        # 2 Determine whether the operation succeeded or failed
+        # (1) Deduction exceeds limit - fail
+        if self.number > self.my_limit:
+            self.message_box_result.setPixmap(QPixmap(Image.Fail))
+        else:
+            # (2) Insufficient balance in 2 cases
+            # Player 1 takes player 2’s money, but player 2’s money is not enough
+            if self.symbol == 1 and p2_current_value < self.number:
+                self.message_box_result.setPixmap(QPixmap(Image.Fail))
+            # Player 2 takes player 1’s money, but player 1’s money is not enough
+            elif self.symbol == -1 and p1_current_value < self.number:
+                self.message_box_result.setPixmap(QPixmap(Image.Fail))
+            else:
+                # (3) Successful operation
+                # p1 takes p2`s money(p1+/p2-)
+                if self.symbol == 1:
+                    p1_current_value += self.number  # Calculate balance
+                    p2_current_value -= self.number
+                # p2 takes p1`s money(p1-/p2+)
+                elif self.symbol == -1:
+                    p1_current_value -= self.number  # Calculate balance
+                    p2_current_value += self.number
+                
+                self.value_group[p1_index] = p1_current_value  # Update balance
+                self.value_group[p2_index] = p2_current_value
+
+                self.Set_value()
 
 
 class UI_setting(QWidget):
@@ -591,7 +781,7 @@ class UI_setting(QWidget):
         self.setWindowIcon(QIcon(Image.Icon2))
 
         # Set window borderless
-        # self.setWindowFlags(Qt.FramelessWindowHint)
+        self.setWindowFlags(Qt.FramelessWindowHint)
 
         # label - Setting
         self.title_text = QLabel(self)
@@ -659,6 +849,8 @@ class UI_setting(QWidget):
 
     def Re_cancel(self):
         # Close the current window
+        my_UI.team_box.setFocus()
+
         self.close()
 
     def Re_check(self):
@@ -672,6 +864,7 @@ class UI_setting(QWidget):
         Database.Close_database()  # disconnect
 
         my_UI.Set_range()
+        my_UI.team_box.setFocus()
 
         self.close()
 
