@@ -113,28 +113,36 @@ class UI(QWidget):
         # Add the 'list box cannot be selected' function
 
         # New button
-        self.new_button = QPushButton('添加卡片信息', self)
+        self.new_button = QPushButton('添加', self)
         self.new_button.setToolTip('添加新的卡片数据')
-        self.new_button.resize(130, 40)
+        self.new_button.resize(100, 40)
         self.new_button.move(65, 650)
         # An interface for adding new cards appears
         # Connect to the response function
         self.new_button.clicked.connect(self.Re_new_button)
 
         # Edit button
-        self.edit_button = QPushButton('修改卡片信息', self)
+        self.edit_button = QPushButton('修改', self)
         self.edit_button.setToolTip('修改当前选中的卡片的数据')
-        self.edit_button.resize(130, 40)
-        self.edit_button.move(260, 650)
+        self.edit_button.resize(100, 40)
+        self.edit_button.move(205, 650)
         # An interface for modifying card information appears
         # Connect to the response function
         self.edit_button.clicked.connect(self.Re_edit_button)
 
+        # Delete button
+        self.edit_button = QPushButton('刪除', self)
+        self.edit_button.setToolTip('刪除当前选中的卡片的数据')
+        self.edit_button.resize(100, 40)
+        self.edit_button.move(345, 650)
+        # Connect to the response function
+        self.edit_button.clicked.connect(self.Re_delete_button)
+
         # Close button
-        self.close_button = QPushButton('关闭管理系统', self)
+        self.close_button = QPushButton('关闭', self)
         self.close_button.setToolTip('保存操作并关闭系统')
-        self.close_button.resize(130, 40)
-        self.close_button.move(455, 650)
+        self.close_button.resize(100, 40)
+        self.close_button.move(485, 650)
         self.close_button.clicked.connect(self.close)  # close the window
 
     # Used to get the current time and display
@@ -210,6 +218,8 @@ class UI(QWidget):
 
     # 'new' button response function
     def Re_new_button(self):
+        self.search_result = False
+        self.select_result = False
         # Clear current page
         self.search_box.clear()
         self.result_box.clear()
@@ -232,6 +242,31 @@ class UI(QWidget):
             my_UI_edit.name_box.setText(str(self.info[1]))
             my_UI_edit.balance_box.setText(str(self.info[2]))
             my_UI_edit.show()
+
+            self.search_result = False
+            self.select_result = False
+        # else: QMessagebox
+
+    # 'delete' button response function
+    def Re_delete_button(self):
+        # If and only if you select an item in the list on the left,
+        # a response will appear, and the modification interface will appear
+        if my_UI.select_result:
+            self.search_box.clear()
+            self.result_box.clear()
+            self.information_box.clear()
+
+            Database.Create_DB()
+            Database.Delete_user(self.info[0])
+            Database.Close_database()
+
+            self.search_result = False
+            self.select_result = False
+
+            '''my_UI_edit.id_box.setText(str(self.info[0]))
+            my_UI_edit.name_box.setText(str(self.info[1]))
+            my_UI_edit.balance_box.setText(str(self.info[2]))
+            my_UI_edit.show()'''
         # else: QMessagebox
 
     '''
