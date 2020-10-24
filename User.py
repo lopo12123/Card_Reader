@@ -285,6 +285,7 @@ class UI(QWidget):
 
         # about operate
         self.step = -1
+        self.player_option = -1
         self.player1_id = -1  # player`id cant be -1
         self.player2_id = -1  # if it == -1 -> didn`t get this id
         self.symbol = 0  # take - '1'; give - '-1'
@@ -563,8 +564,6 @@ class UI(QWidget):
             self.bar_group[i].setValue(item)  # self.value_group.index(item)
             i += 1
 
-        # 改：增加对数据库数据的修改
-
     def Re_close(self):
         # Close the current window
         self.close()
@@ -613,12 +612,12 @@ class UI(QWidget):
         Function: keyPressEvent(self, event)
         Usage: Add response to keyboard events
         Note: key coding:
-              F1 - 16777264
-              F2 - 16777265
-              F3 - 16777266
-              F4 - 16777267
-              F5 - 16777268
-              F6 - 16777269
+              F1 - 16777264 - Add(Take)
+              F2 - 16777265 - Sub(Give)
+              F3 - 16777266 - Double add: multiply the added value by 2
+              F4 - 16777267 - Half add: the added value is halved
+              F5 - 16777268 - Double sub: multiply the subtracted value by 2
+              F6 - 16777269 - Half sub: Decrease by half
               '.' - 46
               L-Enter - 16777220
               R-Enter - 16777221
@@ -695,6 +694,70 @@ class UI(QWidget):
                 # go to next step
                 self.step = 1
                 self.change_info(1)
+            elif event.key() == 16777266:  # key 'F3' - double add
+                # Get id
+                self.player_option = int(current_text)
+                # print(self.player_option)
+
+                # Change its 'RATE' in sheet 'USER'
+                Database.Create_DB()
+                Database.Update_rate(self.player_option, 2)
+                Database.Close_database()
+                # add record to history
+                p_o = chr(ord('A') + User_id_g.index(self.player_option))  # get p1`s code(ABCD....)
+                self.history_list.addItem('')
+                self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 设置玩家' + p_o + ': 倍加')
+                self.history_list.scrollToBottom()
+                # go to next step
+                self.step = 0
+            elif event.key() == 16777267:  # key 'F4' - half add
+                # Get id
+                self.player_option = int(current_text)
+                # print(self.player_option)
+
+                # Change its 'RATE' in sheet 'USER'
+                Database.Create_DB()
+                Database.Update_rate(self.player_option, 3)
+                Database.Close_database()
+                # add record to history
+                p_o = chr(ord('A') + User_id_g.index(self.player_option))  # get p1`s code(ABCD....)
+                self.history_list.addItem('')
+                self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 设置玩家' + p_o + ': 半加')
+                self.history_list.scrollToBottom()
+                # go to next step
+                self.step = 0
+            elif event.key() == 16777268:  # key 'F5' - double sub
+                # Get id
+                self.player_option = int(current_text)
+                # print(self.player_option)
+
+                # Change its 'RATE' in sheet 'USER'
+                Database.Create_DB()
+                Database.Update_rate(self.player_option, 4)
+                Database.Close_database()
+                # add record to history
+                p_o = chr(ord('A') + User_id_g.index(self.player_option))  # get p1`s code(ABCD....)
+                self.history_list.addItem('')
+                self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 设置玩家' + p_o + ': 倍减')
+                self.history_list.scrollToBottom()
+                # go to next step
+                self.step = 0
+            elif event.key() == 16777269:  # key 'F6' - half sub
+                # Get id
+                self.player_option = int(current_text)
+                # print(self.player_option)
+
+                # Change its 'RATE' in sheet 'USER'
+                Database.Create_DB()
+                Database.Update_rate(self.player_option, 5)
+                Database.Close_database()
+                # add record to history
+                p_o = chr(ord('A') + User_id_g.index(self.player_option))  # get p1`s code(ABCD....)
+                self.history_list.addItem('')
+                self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 设置玩家' + p_o + ': 半减')
+                self.history_list.scrollToBottom()
+                # go to next step
+                self.step = 0
 
     def change_info(self, num):
         if num == 0:
@@ -720,6 +783,47 @@ class UI(QWidget):
         p1_current_value = self.value_group[p1_index]
         p2_current_value = self.value_group[p2_index]
 
+        # Get the magnification of p1 and p2
+        Database.Create_DB()
+        p1_rate_get = Database.Select_user(self.player1_id)[3]
+        p2_rate_get = Database.Select_user(self.player2_id)[3]
+        # print(str(p1_rate_get) + '/' + str(p2_rate_get))
+        Database.Close_database()
+
+        if p1_rate_get == 1:
+            p1_rate_add = 1
+            p1_rate_sub = 1
+        elif p1_rate_get == 2:
+            p1_rate_add = 2
+            p1_rate_sub = 1
+        elif p1_rate_get == 3:
+            p1_rate_add = 0.5
+            p1_rate_sub = 1
+        elif p1_rate_get == 4:
+            p1_rate_add = 1
+            p1_rate_sub = 2
+        elif p1_rate_get == 5:
+            p1_rate_add = 1
+            p1_rate_sub = 0.5
+
+        if p2_rate_get == 1:
+            p2_rate_add = 1
+            p2_rate_sub = 1
+        elif p2_rate_get == 2:
+            p2_rate_add = 2
+            p2_rate_sub = 1
+        elif p2_rate_get == 3:
+            p2_rate_add = 0.5
+            p2_rate_sub = 1
+        elif p2_rate_get == 4:
+            p2_rate_add = 1
+            p2_rate_sub = 2
+        elif p2_rate_get == 5:
+            p2_rate_add = 1
+            p2_rate_sub = 0.5
+
+        # print(str(p1_rate_add) + '/' + str(p1_rate_sub) + '/' + str(p2_rate_add) + '/' + str(p2_rate_sub))
+
         # 1 The information prompt area displays Player 1 and Player 2
         self.message_box_player1.setPixmap(QPixmap(Image.Team[p1_index]))  # p1
         self.message_box_player2.setPixmap(QPixmap(Image.Team[p2_index]))  # p2
@@ -728,29 +832,45 @@ class UI(QWidget):
 
         # 2 Determine whether the operation succeeded or failed
         # (1) Deduction exceeds limit - fail
-        if self.number > self.my_limit:
+        should_number = max(p1_rate_sub, p2_rate_sub) * self.number
+        if should_number > self.my_limit:
             self.message_box_result.setPixmap(QPixmap(Image.Fail))
         else:
             # (2) Insufficient balance in 2 cases
             # Player 1 takes player 2’s money, but player 2’s money is not enough
-            if self.symbol == 1 and p2_current_value < self.number:
+            if self.symbol == 1 and p2_current_value < (self.number * p2_rate_sub):
                 self.message_box_result.setPixmap(QPixmap(Image.Fail))
             # Player 2 takes player 1’s money, but player 1’s money is not enough
-            elif self.symbol == -1 and p1_current_value < self.number:
+            elif self.symbol == -1 and p1_current_value < (self.number * p1_rate_sub):
                 self.message_box_result.setPixmap(QPixmap(Image.Fail))
             else:
                 # (3) Successful operation
+                self.message_box_result.setPixmap(QPixmap(Image.Success))
                 # p1 takes p2`s money(p1+/p2-)
                 if self.symbol == 1:
-                    p1_current_value += self.number  # Calculate balance
-                    p2_current_value -= self.number
+                    p1_current_value += (self.number * p1_rate_add)  # Calculate balance
+                    p2_current_value -= (self.number * p2_rate_sub)
                 # p2 takes p1`s money(p1-/p2+)
                 elif self.symbol == -1:
-                    p1_current_value -= self.number  # Calculate balance
-                    p2_current_value += self.number
-                
+                    p1_current_value -= (self.number * p1_rate_sub)  # Calculate balance
+                    p2_current_value += (self.number * p2_rate_add)
+
+                # double/half add/sub only takes effect once
+                Database.Create_DB()
+                Database.Update_rate(self.player1_id, 1)
+                Database.Update_rate(self.player2_id, 1)
+                Database.Close_database()
+
                 self.value_group[p1_index] = p1_current_value  # Update balance
                 self.value_group[p2_index] = p2_current_value
+
+                # * Modify the data in the database
+                Database.Create_DB()
+                Database.Update_one(self.player1_id, p1_current_value)
+                Database.Update_one(self.player2_id, p2_current_value)
+                Database.Close_database()
+                '''print('p1 id:' + str(self.player1_id) + '  p2 id:' + str(self.player2_id))
+                print('p1:' + str(p1_current_value) + '  p2:' + str(p2_current_value))'''
 
                 self.Set_value()
 
