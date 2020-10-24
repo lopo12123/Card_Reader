@@ -22,6 +22,7 @@ def Create_user():  # checked
       | ID        |   INT     |   √   |   √   |   NULL          |
       | NAME      |   CHAR    |   √   |       |   NULL          |
       | BALANCE   |   INT     |   √   |       |   NULL          |
+      | RATE      |   INT     |   √   |       |   1             |
       -----------------------------------------------------------
     '''
 
@@ -29,7 +30,8 @@ def Create_user():  # checked
         CREATE TABLE IF NOT EXISTS USER(
             ID INT PRIMARY KEY NOT NULL,
             NAME CHAR NOT NULL,
-            BALANCE INT NOT NULL
+            BALANCE INT NOT NULL,
+            RATE INT NOT NULL
         );''')
 
     my_cursor.execute('''
@@ -51,7 +53,7 @@ def Insert_user(user_id, user_name, user_balance):  # checked
     insert_id = user_id  # Receive three new data
     insert_name = user_name
     insert_balance = user_balance
-    my_cursor.execute('''INSERT INTO USER VALUES(?, ?, ?);''',
+    my_cursor.execute('''INSERT INTO USER VALUES(?, ?, ?, 1);''',
                       (insert_id, insert_name, insert_balance))
 
 
@@ -91,7 +93,7 @@ def Select_user(user_id):  # checked
     # (2)    print(item)
 
 
-def Select_all():
+def Select_all():  # checked
     '''
     Function: Select_all()
     Usage: Query all tuples in the data sheet and return
@@ -106,9 +108,24 @@ def Select_all():
 def Update_one(user_id, new_balance):  # checked
     update_id = user_id
     update_balance = new_balance
-    my_cursor.execute(
-        '''UPDATE USER SET BALANCE = ? WHERE ID = ?;''',
-        (update_balance, update_id))
+    my_cursor.execute('''UPDATE USER SET BALANCE = ? WHERE ID = ?;''',
+                      (update_balance, update_id))
+
+
+def Update_rate(user_id, new_rate):  # checked
+    '''
+    About 'RATE':
+    1 - normal;
+    2 - double add;
+    3 - half add;
+    4 - double sub;
+    5 - half sub;
+    '''
+
+    update_id = user_id
+    update_rate = new_rate
+    my_cursor.execute('''UPDATE USER SET RATE = ? WHERE ID = ?;''',
+                      (update_rate, update_id))
 
 
 def Update_user(user_id, new_name, new_balance):  # checked
@@ -164,19 +181,27 @@ if __name__ == '__main__':
     and it will not be executed as the called library
     '''
 
-    # test
     Create_DB()  # connect DB
     Create_user()  # create sheet
+
     '''
-    Insert_user(1, 'one', 111)
-    Insert_user(2, 'two', 222)
-    Insert_user(3, 'three', 333)
+    # test
+    Insert_user(1, 'test1', 5000)
+    Insert_user(2, 'test2', 5000)
+    Insert_user(3, 'test3', 5000)
+    Insert_user(4, 'test4', 5000)
+    Insert_user(5, 'test5', 5000)
+    Insert_user(6, 'test6', 5000)
+    Insert_user(7, 'test7', 5000)
+    Insert_user(8, 'test8', 5000)
+    Insert_user(9, 'test9', 5000)
+    Insert_user(10, 'test10', 5000)
+    Insert_user(11, 'test11', 5000)
+    Insert_user(12, 'test12', 5000)
+    Insert_user(13, 'test13', 5000)
+    Insert_user(14, 'test14', 5000)
+    Insert_user(15, 'test15', 5000)
+    Insert_user(16, 'test16', 5000)
     '''
-    # Select_all()
-    # Delete_user()
-    # Update_one(922580530, 2500)
-    '''Insert_user(1, 'test1', 2000)
-    Insert_user(2, 'test2', 2000)
-    Insert_user(3, 'test3', 2000)
-    Insert_user(4, 'test4', 2000)'''
+
     Close_database()
