@@ -21,7 +21,9 @@ class Image:
     Background = './Resources/Background/Background.png'  # Background
     Success = './Resources/Background/Success.png'  # Success
     Fail = './Resources/Background/Fail.png'  # Fail
-    Team = [] * 16  # Team label (1 - 16)
+
+    # Team label (1 - 16)
+    Team = [] * 16
     Team.append('./Resources/Background/Team1.jpg')  # Team[0]
     Team.append('./Resources/Background/Team2.jpg')
     Team.append('./Resources/Background/Team3.jpg')
@@ -40,6 +42,25 @@ class Image:
     Team.append('./Resources/Background/Team16.jpg')
     Unknown = './Resources/Background/Unknown.png'  # symbol '?'
     Hand = './Resources/Background/Hand.png'  # symbol 'hand'
+
+    # 16 stylesheets
+    Style = [] * 16
+    Style.append('QProgressBar{text-align: center} QProgressBar::chunk{background: #FF0000;}')  # 0
+    Style.append('QProgressBar{text-align: center} QProgressBar::chunk{background: #FFFF00;}')  # 1
+    Style.append('QProgressBar{text-align: center} QProgressBar::chunk{background: #80FF00;}')  # 2
+    Style.append('QProgressBar{text-align: center} QProgressBar::chunk{background: #00FFFF;}')  # 3
+    Style.append('QProgressBar{text-align: center} QProgressBar::chunk{background: #FF80C0;}')  # 4
+    Style.append('QProgressBar{text-align: center} QProgressBar::chunk{background: #FF8040;}')  # 5
+    Style.append('QProgressBar{text-align: center} QProgressBar::chunk{background: #800000;}')  # 6
+    Style.append('QProgressBar{text-align: center} QProgressBar::chunk{background: #808000;}')  # 7
+    Style.append('QProgressBar{text-align: center} QProgressBar::chunk{background: #8000FF;}')  # 8
+    Style.append('QProgressBar{text-align: center} QProgressBar::chunk{background: #808080;}')  # 9
+    Style.append('QProgressBar{text-align: center} QProgressBar::chunk{background: #800080;}')  # 10
+    Style.append('QProgressBar{text-align: center} QProgressBar::chunk{background: #FF0080;}')  # 11
+    Style.append('QProgressBar{text-align: center} QProgressBar::chunk{background: #C0C0C0;}')  # 12
+    Style.append('QProgressBar{text-align: center} QProgressBar::chunk{background: #00FF00;}')  # 13
+    Style.append('QProgressBar{text-align: center} QProgressBar::chunk{background: #0000FF;}')  # 14
+    Style.append('QProgressBar{text-align: center} QProgressBar::chunk{background: #408080;}')  # 15
 
 
 # UI guide1: Know how many users
@@ -355,7 +376,7 @@ class UI(QWidget):
 
         self.history_list = QListWidget(self)  # history
         self.history_list.setFocusPolicy(Qt.NoFocus)
-        self.history_list.setMinimumSize(320, 60)
+        self.history_list.setMinimumSize(360, 60)
         self.history_list.setMaximumHeight(90)
         # self.history_list.addItem('日期:' + QDate.currentDate().toString(Qt.ISODate))  # date
         # self.history_list.addItem('时间:' + QTime.currentTime().toString())  # time
@@ -381,6 +402,13 @@ class UI(QWidget):
             'QPushButton{border-image: url(./Resources/Background/Full_1.png)}'
         )
         self.button_full.clicked.connect(self.Re_full)
+
+        self.button_next = QPushButton('', self)
+        self.button_next.setMinimumSize(40, 40)
+        self.button_next.setStyleSheet(
+            'QPushButton{border-image: url(./Resources/Background/Next_1.png)}'
+        )
+        self.button_next.clicked.connect(self.Re_next)
         '''Set the box layout'''
         # line 1 - a message box
         self.h_layout_head = QHBoxLayout()
@@ -401,7 +429,9 @@ class UI(QWidget):
         self.h_layout_end.addStretch()
         self.h_layout_end.addWidget(self.button_close)
         self.h_layout_end.addWidget(self.button_setting)
-        self.h_layout_end.addWidget(self.button_full)
+        # self.h_layout_end.addWidget(self.button_full)
+        self.button_full.move(-100, -100)
+        self.h_layout_end.addWidget(self.button_next)
 
         # Put six horizontal layouts into a vertical layout
         self.v_layout = QVBoxLayout()  # Instantiate a vertical layout manager
@@ -542,9 +572,12 @@ class UI(QWidget):
         Database.Close_database()
 
         # Set Limit(max / min)
+        i = 0
         for item in self.bar_group:
             item.setRange(self.my_min, self.my_max)  # set range
             item.setFormat('%v')  # set the display format
+            item.setStyleSheet(Image.Style[i])
+            i += 1
 
         # Get Value (in the 'self.value_group')
         self.value_group = []
@@ -581,6 +614,33 @@ class UI(QWidget):
         else:
             self.showMaximized()
             self.team_box.setFocus()
+
+    def Re_next(self):
+        # reset the 'rate' in database
+        Database.Create_DB()
+        Database.Reset_rate()
+        Database.Close_database()
+
+        # Reset the title
+        self.message_box_player1.setPixmap(QPixmap(Image.Unknown))
+        self.message_box_player2.setPixmap(QPixmap(Image.Unknown))
+        self.message_box_number.setPixmap(QPixmap(Image.Unknown))
+        self.message_box_result.setPixmap(QPixmap(Image.Success))
+
+        # Reset all the progressbars and their values
+        self.Set_range()
+
+        # Reset the step and information
+        self.step = 0
+        self.change_info(0)
+
+        # Record in history
+        self.history_list.addItem('')
+        self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 重置成功！')
+        self.history_list.scrollToBottom()
+
+        # Set focus
+        self.team_box.setFocus()
 
     def is_number(self, s):
         '''
@@ -647,117 +707,162 @@ class UI(QWidget):
                 self.history_list.scrollToBottom()
 
                 self.step = 0
+                result = False
                 self.change_info(0)
 
         # Step 1: get the player2`s id
         if self.step == 1 and result is True:
-            if event.key() == 16777220 or event.key() == 16777221:  # press 'enter' to confirm
-                self.player2_id = int(current_text)
-
-                p2 = chr(ord('A') + User_id_g.index(self.player2_id))
-                if self.symbol == 1:
-                    self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 确认玩家2: ' + p2)
+            # Determine whether the currently entered id belongs to the current player
+            if self.right_button(event.key()) is True:
+                a = int(current_text)  # 'a' indicates the id of the current input,
+                b = False  # 'b' indicates whether there is a current id in the queue
+                for item in User_id_g:
+                    if item == a:
+                        b = True
+                        break
+                if b is False:
+                    # there is no such id in the group 'User_group_g'
+                    # print('no such id 2')
+                    self.history_list.addItem('')
+                    self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 出错！请输入正确的p2！')
                     self.history_list.scrollToBottom()
-                elif self.symbol == -1:
-                    self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 确认玩家2: ' + p2)
-                    self.history_list.scrollToBottom()
+                    self.step = 0
+                    result = False
+                    self.change_info(0)
+                else:
+                    # Enter the correct id, then record the id of p2
+                    if event.key() == 16777220 or event.key() == 16777221:  # press 'enter' to confirm
+                        self.player2_id = int(current_text)
 
-                self.step = 2
-                self.change_info(2)
+                        p2 = chr(ord('A') + User_id_g.index(self.player2_id))
+                        if self.symbol == 1:
+                            self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 确认玩家2: ' + p2)
+                            self.history_list.scrollToBottom()
+                        elif self.symbol == -1:
+                            self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 确认玩家2: ' + p2)
+                            self.history_list.scrollToBottom()
+
+                        self.step = 2
+                        self.change_info(2)
 
         # Step 0: know symbol`s value
         #         press F1/F2 is also used to check the player1`s id
         if self.step == 0 and result is True:
-            ''' 1 - now the text in 'team_box' is a number
-                2 - and 'step == 0' means it`s time to choose F1 / F2 '''
-            if event.key() == 16777264:  # key 'F1' - Add
-                self.symbol = 1
-                self.player1_id = int(current_text)
+            # Determine whether the currently entered id belongs to the current player
+            if self.right_button(event.key()) is True:
+                a = int(current_text)  # 'a' indicates the id of the current input,
+                b = False  # 'b' indicates whether there is a current id in the queue
+                for item in User_id_g:
+                    if item == a:
+                        b = True
+                        break
+                if b is False:
+                    # there is no such id in the group 'User_group_g'
+                    # print('no such id 1')
+                    self.history_list.addItem('')
+                    self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 出错！请输入正确的p1！')
+                    self.history_list.scrollToBottom()
+                    self.step = 0
+                    self.change_info(0)
+                else:
+                    ''' 1 - now the text in 'team_box' is a number
+                        2 - and 'step == 0' means it`s time to choose F1 / F2 '''
+                    if event.key() == 16777264:  # key 'F1' - Add
+                        self.symbol = 1
+                        self.player1_id = int(current_text)
 
-                p1 = chr(ord('A') + User_id_g.index(self.player1_id))  # get p1`s code(ABCD....)
-                self.history_list.addItem('')
-                self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 确认玩家1: ' + p1)
-                self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 确认操作: 加')
-                self.history_list.scrollToBottom()
-                # go to next step
-                self.step = 1
-                self.change_info(1)
-            elif event.key() == 16777265:  # key 'F2' - Sub
-                self.symbol = -1
-                self.player1_id = int(current_text)
+                        p1 = chr(ord('A') + User_id_g.index(self.player1_id))  # get p1`s code(ABCD....)
+                        self.history_list.addItem('')
+                        self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 确认玩家1: ' + p1)
+                        self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 确认操作: 加')
+                        self.history_list.scrollToBottom()
+                        # go to next step
+                        self.step = 1
+                        self.change_info(1)
+                    elif event.key() == 16777265:  # key 'F2' - Sub
+                        self.symbol = -1
+                        self.player1_id = int(current_text)
 
-                p1 = chr(ord('A') + User_id_g.index(self.player1_id))  # get p1`s code(ABCD....)
-                self.history_list.addItem('')
-                self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 确认玩家1: ' + p1)
-                self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 确认操作: 减')
-                self.history_list.scrollToBottom()
-                # go to next step
-                self.step = 1
-                self.change_info(1)
-            elif event.key() == 16777266:  # key 'F3' - double add
-                # Get id
-                self.player_option = int(current_text)
-                # print(self.player_option)
+                        p1 = chr(ord('A') + User_id_g.index(self.player1_id))  # get p1`s code(ABCD....)
+                        self.history_list.addItem('')
+                        self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 确认玩家1: ' + p1)
+                        self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 确认操作: 减')
+                        self.history_list.scrollToBottom()
+                        # go to next step
+                        self.step = 1
+                        self.change_info(1)
+                    elif event.key() == 16777266:  # key 'F3' - double add
+                        # Get id
+                        self.player_option = int(current_text)
+                        # print(self.player_option)
 
-                # Change its 'RATE' in sheet 'USER'
-                Database.Create_DB()
-                Database.Update_rate(self.player_option, 2)
-                Database.Close_database()
-                # add record to history
-                p_o = chr(ord('A') + User_id_g.index(self.player_option))  # get p1`s code(ABCD....)
-                self.history_list.addItem('')
-                self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 设置玩家' + p_o + ': 倍加')
-                self.history_list.scrollToBottom()
-                # go to next step
-                self.step = 0
-            elif event.key() == 16777267:  # key 'F4' - half add
-                # Get id
-                self.player_option = int(current_text)
-                # print(self.player_option)
+                        # Change its 'RATE' in sheet 'USER'
+                        Database.Create_DB()
+                        Database.Update_rate(self.player_option, 2)
+                        Database.Close_database()
+                        # add record to history
+                        p_o = chr(ord('A') + User_id_g.index(self.player_option))  # get p1`s code(ABCD....)
+                        self.history_list.addItem('')
+                        self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 设置玩家' + p_o + ': 倍加')
+                        self.history_list.scrollToBottom()
+                        # go to next step
+                        self.step = 0
+                    elif event.key() == 16777267:  # key 'F4' - half add
+                        # Get id
+                        self.player_option = int(current_text)
+                        # print(self.player_option)
 
-                # Change its 'RATE' in sheet 'USER'
-                Database.Create_DB()
-                Database.Update_rate(self.player_option, 3)
-                Database.Close_database()
-                # add record to history
-                p_o = chr(ord('A') + User_id_g.index(self.player_option))  # get p1`s code(ABCD....)
-                self.history_list.addItem('')
-                self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 设置玩家' + p_o + ': 半加')
-                self.history_list.scrollToBottom()
-                # go to next step
-                self.step = 0
-            elif event.key() == 16777268:  # key 'F5' - double sub
-                # Get id
-                self.player_option = int(current_text)
-                # print(self.player_option)
+                        # Change its 'RATE' in sheet 'USER'
+                        Database.Create_DB()
+                        Database.Update_rate(self.player_option, 3)
+                        Database.Close_database()
+                        # add record to history
+                        p_o = chr(ord('A') + User_id_g.index(self.player_option))  # get p1`s code(ABCD....)
+                        self.history_list.addItem('')
+                        self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 设置玩家' + p_o + ': 半加')
+                        self.history_list.scrollToBottom()
+                        # go to next step
+                        self.step = 0
+                    elif event.key() == 16777268:  # key 'F5' - double sub
+                        # Get id
+                        self.player_option = int(current_text)
+                        # print(self.player_option)
 
-                # Change its 'RATE' in sheet 'USER'
-                Database.Create_DB()
-                Database.Update_rate(self.player_option, 4)
-                Database.Close_database()
-                # add record to history
-                p_o = chr(ord('A') + User_id_g.index(self.player_option))  # get p1`s code(ABCD....)
-                self.history_list.addItem('')
-                self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 设置玩家' + p_o + ': 倍减')
-                self.history_list.scrollToBottom()
-                # go to next step
-                self.step = 0
-            elif event.key() == 16777269:  # key 'F6' - half sub
-                # Get id
-                self.player_option = int(current_text)
-                # print(self.player_option)
+                        # Change its 'RATE' in sheet 'USER'
+                        Database.Create_DB()
+                        Database.Update_rate(self.player_option, 4)
+                        Database.Close_database()
+                        # add record to history
+                        p_o = chr(ord('A') + User_id_g.index(self.player_option))  # get p1`s code(ABCD....)
+                        self.history_list.addItem('')
+                        self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 设置玩家' + p_o + ': 倍减')
+                        self.history_list.scrollToBottom()
+                        # go to next step
+                        self.step = 0
+                    elif event.key() == 16777269:  # key 'F6' - half sub
+                        # Get id
+                        self.player_option = int(current_text)
+                        # print(self.player_option)
 
-                # Change its 'RATE' in sheet 'USER'
-                Database.Create_DB()
-                Database.Update_rate(self.player_option, 5)
-                Database.Close_database()
-                # add record to history
-                p_o = chr(ord('A') + User_id_g.index(self.player_option))  # get p1`s code(ABCD....)
-                self.history_list.addItem('')
-                self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 设置玩家' + p_o + ': 半减')
-                self.history_list.scrollToBottom()
-                # go to next step
-                self.step = 0
+                        # Change its 'RATE' in sheet 'USER'
+                        Database.Create_DB()
+                        Database.Update_rate(self.player_option, 5)
+                        Database.Close_database()
+                        # add record to history
+                        p_o = chr(ord('A') + User_id_g.index(self.player_option))  # get p1`s code(ABCD....)
+                        self.history_list.addItem('')
+                        self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 设置玩家' + p_o + ': 半减')
+                        self.history_list.scrollToBottom()
+                        # go to next step
+                        self.step = 0
+
+    def right_button(self, button_number):
+        if 16777264 <= button_number <= 16777269:  # F1 - F6
+            return True
+        elif button_number == 16777220 or button_number == 16777221:
+            return True
+        else:
+            return False
 
     def change_info(self, num):
         if num == 0:
@@ -865,10 +970,10 @@ class UI(QWidget):
                 self.value_group[p2_index] = p2_current_value
 
                 # * Modify the data in the database
-                Database.Create_DB()
+                '''Database.Create_DB()
                 Database.Update_one(self.player1_id, p1_current_value)
                 Database.Update_one(self.player2_id, p2_current_value)
-                Database.Close_database()
+                Database.Close_database()'''
                 '''print('p1 id:' + str(self.player1_id) + '  p2 id:' + str(self.player2_id))
                 print('p1:' + str(p1_current_value) + '  p2:' + str(p2_current_value))'''
 
