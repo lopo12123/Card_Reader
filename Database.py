@@ -128,6 +128,13 @@ def Update_rate(user_id, new_rate):  # checked
                       (update_rate, update_id))
 
 
+def Reset_rate():  # checked
+    '''
+    reset all the rate to '1'
+    '''
+    my_cursor.execute('''UPDATE USER SET RATE = 1;''')
+
+
 def Update_user(user_id, new_name, new_balance):  # checked
     '''
     Function: Update_user(user_id)
@@ -183,6 +190,12 @@ if __name__ == '__main__':
 
     Create_DB()  # connect DB
     Create_user()  # create sheet
+
+    '''b = Select_user(15)
+    if b is None:
+        print('no such id')
+    else:
+        print(b)'''
 
     '''
     # test
