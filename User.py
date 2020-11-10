@@ -10,6 +10,7 @@ from PyQt5.QtCore import QTimer, Qt, QTime, QDate, QDateTime
 # Some global variables
 User_number_g = 0  # Total number of users / default 0
 User_id_g = [0] * 16  # Create a new array of size 16 to store user id
+History_number = 1  # the count number of operations, reset when click the reset button
 
 
 class Image:
@@ -240,6 +241,10 @@ class UI_guide2(QWidget):
                 if self.now_number == max_user:
                     self.next_button.setText('确认')
             elif self.now_number == max_user:  # end insert
+                # 清空原有记录表, 用于存放当前次操作记录数据
+                Database.Create_DB()
+                Database.Delete_operate()
+                Database.Close_database()
                 # print(User_id_g)
                 self.close()
 
@@ -345,7 +350,7 @@ class UI(QWidget):
         self.setWindowIcon(QIcon(Image.Icon1))
 
         self.team_box = QLineEdit(self)  # a LineEdit to accept the card id
-        self.team_box.resize(100, 30)
+        self.team_box.resize(100, 40)
         self.team_box.move(-120, -50)  # move out of the screen
         self.focus_box = QLabel(self)  # a label to set screen`s focus
         self.focus_box.resize(10, 10)
@@ -381,13 +386,16 @@ class UI(QWidget):
         # self.history_list.addItem('日期:' + QDate.currentDate().toString(Qt.ISODate))  # date
         # self.history_list.addItem('时间:' + QTime.currentTime().toString())  # time
         self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 进入程序')
-
+        
+        # the function of button 'close' is replaced by 'save'(name not change)
+        # which is used to save all the record of the operatinos
         self.button_close = QPushButton('', self)
         self.button_close.setMinimumSize(40, 40)
         self.button_close.setStyleSheet(
-            'QPushButton{border-image: url(./Resources/Background/Close_1.png)}'
+            'QPushButton{border-image: url(./Resources/Background/Save_1.png)}'
         )
-        self.button_close.clicked.connect(self.Re_close)
+        # self.button_close.clicked.connect(self.Re_close)  # changed
+        self.button_close.clicked.connect(self.Re_save)
 
         self.button_setting = QPushButton('', self)
         self.button_setting.setMinimumSize(40, 40)
@@ -396,12 +404,12 @@ class UI(QWidget):
         )
         self.button_setting.clicked.connect(self.Re_setting)
 
-        self.button_full = QPushButton('', self)
+        '''self.button_full = QPushButton('', self)
         self.button_full.setMinimumSize(40, 40)
         self.button_full.setStyleSheet(
             'QPushButton{border-image: url(./Resources/Background/Full_1.png)}'
         )
-        self.button_full.clicked.connect(self.Re_full)
+        self.button_full.clicked.connect(self.Re_full)'''
 
         self.button_next = QPushButton('', self)
         self.button_next.setMinimumSize(40, 40)
@@ -430,7 +438,7 @@ class UI(QWidget):
         self.h_layout_end.addWidget(self.button_close)
         self.h_layout_end.addWidget(self.button_setting)
         # self.h_layout_end.addWidget(self.button_full)
-        self.button_full.move(-100, -100)
+        # self.button_full.move(-100, -100)
         self.h_layout_end.addWidget(self.button_next)
 
         # Put six horizontal layouts into a vertical layout
@@ -601,6 +609,25 @@ class UI(QWidget):
         # Close the current window
         self.close()
 
+    def Re_save(self):
+        # get all the operate record
+        Database.Create_DB()
+        history_result = Database.Get_operate()
+        Database.Close_database()
+
+        fo = open('历史记录.txt', 'w')  # 文件只写, 新操作会覆盖旧文档
+        for item in history_result:
+            fo.write(item[1])
+            fo.write('\n')  # new line
+        fo.close()
+
+        self.history_list.addItem('')  # notice the user
+        self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 导出记录成功！')
+        self.history_list.scrollToBottom()
+
+        # reset the focus on the 'team_box'
+        self.team_box.setFocus()
+
     def Re_setting(self):
         # Enter the setting interface
         my_Setting.Get_Settings()
@@ -638,6 +665,18 @@ class UI(QWidget):
         self.history_list.addItem('')
         self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 重置成功！')
         self.history_list.scrollToBottom()
+
+        # Record in database
+        global History_number
+        my_number = '*OPT' + str(History_number) + ':  '
+        my_time = QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss')
+        my_operation = my_time + '重置数据'
+
+        Database.Create_DB()
+        Database.New_operate(History_number, my_number + my_operation)
+        Database.Close_database()
+
+        History_number += 1
 
         # Set focus
         self.team_box.setFocus()
@@ -683,6 +722,7 @@ class UI(QWidget):
               R-Enter - 16777221
               Backspace - 16777219
         '''
+
         # get the text in the 'team_box' then clear the box:
         ''' if it`s valid, use it
         if it`s invalid, ignore it '''
@@ -694,6 +734,7 @@ class UI(QWidget):
         # Step 2: get the number(how much money to take)
         if self.step == 2 and result is True:
             if event.key() == 16777220 or event.key() == 16777221:  # press 'enter' to confirm
+                self.my_move('out')
                 self.number = int(current_text)
 
                 self.Solve()
@@ -741,7 +782,8 @@ class UI(QWidget):
                         elif self.symbol == -1:
                             self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 确认玩家2: ' + p2)
                             self.history_list.scrollToBottom()
-
+                        
+                        self.my_move('in')
                         self.step = 2
                         self.change_info(2)
 
@@ -856,6 +898,15 @@ class UI(QWidget):
                         # go to next step
                         self.step = 0
 
+    def my_move(self, where):
+        if where == 'out':
+            self.team_box.move(-120, -50)
+            # print('move out')
+        elif where == 'in':
+            self.team_box.setPlaceholderText('请输入金额')
+            self.team_box.move(70, 50)
+            # print('move in')
+
     def right_button(self, button_number):
         if 16777264 <= button_number <= 16777269:  # F1 - F6
             return True
@@ -955,10 +1006,12 @@ class UI(QWidget):
                 if self.symbol == 1:
                     p1_current_value += (self.number * p1_rate_add)  # Calculate balance
                     p2_current_value -= (self.number * p2_rate_sub)
+                    opt = ' 加 '
                 # p2 takes p1`s money(p1-/p2+)
                 elif self.symbol == -1:
                     p1_current_value -= (self.number * p1_rate_sub)  # Calculate balance
                     p2_current_value += (self.number * p2_rate_add)
+                    opt = ' 减 '
 
                 # double/half add/sub only takes effect once
                 Database.Create_DB()
@@ -969,13 +1022,31 @@ class UI(QWidget):
                 self.value_group[p1_index] = p1_current_value  # Update balance
                 self.value_group[p2_index] = p2_current_value
 
-                # * Modify the data in the database
+                # * save the operation in the database
                 '''Database.Create_DB()
                 Database.Update_one(self.player1_id, p1_current_value)
                 Database.Update_one(self.player2_id, p2_current_value)
                 Database.Close_database()'''
-                '''print('p1 id:' + str(self.player1_id) + '  p2 id:' + str(self.player2_id))
-                print('p1:' + str(p1_current_value) + '  p2:' + str(p2_current_value))'''
+                p1_name = chr(ord('A') + self.player1_id - 1)
+                p2_name = chr(ord('A') + self.player2_id - 1)
+
+                '''
+                print('p1 name:' + p1_name + ';' + 'p2 name:' + p2_name)
+                print('金额:' + str(self.number))
+                print('p1:' + str(p1_current_value) + '  p2:' + str(p2_current_value))
+                '''
+                # the operate record
+                global History_number
+                my_number = '*OPT' + str(History_number) + ':  '
+                my_time = QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss')
+                my_operation = '  P1: ' + p1_name + ', P2: ' + p2_name + ', 金额: ' + str(self.number) + '; 操作: ' + p1_name + opt + p2_name + ' ' + str(self.number) + ';'
+                # print(my_number + my_time + my_operation)
+
+                Database.Create_DB()
+                Database.New_operate(History_number, my_number + my_time + my_operation)
+                Database.Close_database()
+
+                History_number += 1
 
                 self.Set_value()
 
