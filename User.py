@@ -305,8 +305,8 @@ class UI(QWidget):
         super().__init__()
         self.pos_X = 300
         self.pos_Y = 200
-        self.length = 800
-        self.height = 600
+        self.length = 1000
+        self.height = 750
         self.title = '用户界面'
 
         # about operate
@@ -670,7 +670,7 @@ class UI(QWidget):
         global History_number
         my_number = '*OPT' + str(History_number) + ':  '
         my_time = QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss')
-        my_operation = my_time + '重置数据'
+        my_operation = my_time + '  重置数据;'
 
         Database.Create_DB()
         Database.New_operate(History_number, my_number + my_operation)
@@ -722,7 +722,7 @@ class UI(QWidget):
               R-Enter - 16777221
               Backspace - 16777219
         '''
-
+        global History_number
         # get the text in the 'team_box' then clear the box:
         ''' if it`s valid, use it
         if it`s invalid, ignore it '''
@@ -847,6 +847,18 @@ class UI(QWidget):
                         self.history_list.addItem('')
                         self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 设置玩家' + p_o + ': 倍加')
                         self.history_list.scrollToBottom()
+
+                        # Record in database
+                        my_number = '*OPT' + str(History_number) + ':  '
+                        my_time = QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss')
+                        my_operation = my_time + '  设置玩家' + p_o + ': 倍加;'
+
+                        Database.Create_DB()
+                        Database.New_operate(History_number, my_number + my_operation)
+                        Database.Close_database()
+
+                        History_number += 1
+
                         # go to next step
                         self.step = 0
                     elif event.key() == 16777267:  # key 'F4' - half add
@@ -863,6 +875,18 @@ class UI(QWidget):
                         self.history_list.addItem('')
                         self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 设置玩家' + p_o + ': 半加')
                         self.history_list.scrollToBottom()
+
+                        # Record in database
+                        my_number = '*OPT' + str(History_number) + ':  '
+                        my_time = QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss')
+                        my_operation = my_time + '  设置玩家' + p_o + ': 半加;'
+
+                        Database.Create_DB()
+                        Database.New_operate(History_number, my_number + my_operation)
+                        Database.Close_database()
+
+                        History_number += 1
+
                         # go to next step
                         self.step = 0
                     elif event.key() == 16777268:  # key 'F5' - double sub
@@ -879,6 +903,18 @@ class UI(QWidget):
                         self.history_list.addItem('')
                         self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 设置玩家' + p_o + ': 倍减')
                         self.history_list.scrollToBottom()
+
+                        # Record in database
+                        my_number = '*OPT' + str(History_number) + ':  '
+                        my_time = QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss')
+                        my_operation = my_time + '  设置玩家' + p_o + ': 倍减;'
+
+                        Database.Create_DB()
+                        Database.New_operate(History_number, my_number + my_operation)
+                        Database.Close_database()
+
+                        History_number += 1
+
                         # go to next step
                         self.step = 0
                     elif event.key() == 16777269:  # key 'F6' - half sub
@@ -895,6 +931,18 @@ class UI(QWidget):
                         self.history_list.addItem('')
                         self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 设置玩家' + p_o + ': 半减')
                         self.history_list.scrollToBottom()
+
+                        # Record in database
+                        my_number = '*OPT' + str(History_number) + ':  '
+                        my_time = QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss')
+                        my_operation = my_time + '  设置玩家' + p_o + ': 半减;'
+
+                        Database.Create_DB()
+                        Database.New_operate(History_number, my_number + my_operation)
+                        Database.Close_database()
+
+                        History_number += 1
+
                         # go to next step
                         self.step = 0
 
@@ -904,7 +952,7 @@ class UI(QWidget):
             # print('move out')
         elif where == 'in':
             self.team_box.setPlaceholderText('请输入金额')
-            self.team_box.move(70, 50)
+            self.team_box.move(120, 65)
             # print('move in')
 
     def right_button(self, button_number):
