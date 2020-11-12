@@ -252,7 +252,7 @@ class UI_guide2(QWidget):
                 self.Draw_UI()
                 # set the focus on the LineEdit 'team_box' to accept the card id
                 my_UI.team_box.setFocus()
-                my_UI.step = 0
+                my_UI.step = -1
                 my_UI.show()
 
     def is_number(self, s):
@@ -310,7 +310,7 @@ class UI(QWidget):
         self.title = '用户界面'
 
         # about operate
-        self.step = -1
+        self.step = -2
         self.player_option = -1
         self.player1_id = -1  # player`id cant be -1
         self.player2_id = -1  # if it == -1 -> didn`t get this id
@@ -375,7 +375,7 @@ class UI(QWidget):
         self.message_box_result.setPixmap(QPixmap(Image.Success))
 
         # Three buttons: exit, setting and maximize
-        self.information_box = QLabel('<h3>输入玩家1并选择加减</h3>', self)  # information
+        self.information_box = QLabel('<h2>请输入玩家1</h2>', self)  # information
         self.information_box.setAlignment(Qt.AlignCenter)
         self.information_box.setMinimumSize(50, 60)
 
@@ -386,7 +386,7 @@ class UI(QWidget):
         # self.history_list.addItem('日期:' + QDate.currentDate().toString(Qt.ISODate))  # date
         # self.history_list.addItem('时间:' + QTime.currentTime().toString())  # time
         self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 进入程序')
-        
+
         # the function of button 'close' is replaced by 'save'(name not change)
         # which is used to save all the record of the operatinos
         self.button_close = QPushButton('', self)
@@ -658,8 +658,9 @@ class UI(QWidget):
         self.Set_range()
 
         # Reset the step and information
-        self.step = 0
-        self.change_info(0)
+        self.step = -1
+        self.change_info(-1)
+        self.team_box.clear()
 
         # Record in history
         self.history_list.addItem('')
@@ -708,6 +709,13 @@ class UI(QWidget):
 
     def keyPressEvent(self, event):
         '''
+        ! 刷卡器每次输入结束后自带一个enter(键值为16777220)
+        step -1: get p1`s id
+        step 0: get add / sub
+        step 1: get p2`s id
+        step 2: get the number
+        '''
+        '''
         Function: keyPressEvent(self, event)
         Usage: Add response to keyboard events
         Note: key coding:
@@ -728,7 +736,7 @@ class UI(QWidget):
         if it`s invalid, ignore it '''
         current_text = self.team_box.text()  # current text
         result = self.is_number(current_text)  # if the text is a number
-
+        # if event.key() != 16777220 and event.key() != 16777221:
         self.team_box.clear()
 
         # Step 2: get the number(how much money to take)
@@ -736,6 +744,7 @@ class UI(QWidget):
             if event.key() == 16777220 or event.key() == 16777221:  # press 'enter' to confirm
                 self.my_move('out')
                 self.number = int(current_text)
+                self.team_box.clear()
 
                 self.Solve()
                 ''' * Reset all variables for the next read * -- not necessary
@@ -747,9 +756,9 @@ class UI(QWidget):
                 self.history_list.addItem('操作完成')
                 self.history_list.scrollToBottom()
 
-                self.step = 0
+                self.step = -1  # start from 'step = -1'
                 result = False
-                self.change_info(0)
+                self.change_info(-1)
 
         # Step 1: get the player2`s id
         if self.step == 1 and result is True:
@@ -767,9 +776,9 @@ class UI(QWidget):
                     self.history_list.addItem('')
                     self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 出错！请输入正确的p2！')
                     self.history_list.scrollToBottom()
-                    self.step = 0
+                    self.step = -1
                     result = False
-                    self.change_info(0)
+                    self.change_info(-1)
                 else:
                     # Enter the correct id, then record the id of p2
                     if event.key() == 16777220 or event.key() == 16777221:  # press 'enter' to confirm
@@ -782,20 +791,158 @@ class UI(QWidget):
                         elif self.symbol == -1:
                             self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 确认玩家2: ' + p2)
                             self.history_list.scrollToBottom()
-                        
+
                         self.my_move('in')
                         self.step = 2
                         self.change_info(2)
 
-        # Step 0: know symbol`s value
-        #         press F1/F2 is also used to check the player1`s id
-        if self.step == 0 and result is True:
+        # Step 0: know player1`s id
+        if self.step == 0:
             # Determine whether the currently entered id belongs to the current player
             if self.right_button(event.key()) is True:
-                a = int(current_text)  # 'a' indicates the id of the current input,
+                ''' 1 - now the text in 'team_box' is a number
+                    2 - and 'step == 0' means it`s time to choose F1 / F2 '''
+                if event.key() == 16777264:  # key 'F1' - Add
+                    self.symbol = 1
+
+                    self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 确认操作: 加')
+                    self.history_list.scrollToBottom()
+                    # go to next step
+                    self.step = 1
+                    self.change_info(1)
+                elif event.key() == 16777265:  # key 'F2' - Sub
+                    self.symbol = -1
+
+                    self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 确认操作: 减')
+                    self.history_list.scrollToBottom()
+                    # go to next step
+                    self.step = 1
+                    self.change_info(1)
+                elif event.key() == 16777266:  # key 'F3' - double add
+                    # Get id
+                    self.player_option = self.player1_id
+                    # print(self.player_option)
+
+                    # Change its 'RATE' in sheet 'USER'
+                    Database.Create_DB()
+                    Database.Update_rate(self.player_option, 2)
+                    Database.Close_database()
+                    # add record to history
+                    p_o = chr(ord('A') + User_id_g.index(self.player_option))  # get p1`s code(ABCD....)
+                    self.history_list.addItem('')
+                    self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 设置玩家' + p_o + ': 倍加')
+                    self.history_list.scrollToBottom()
+
+                    # Record in database
+                    my_number = '*OPT' + str(History_number) + ':  '
+                    my_time = QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss')
+                    my_operation = my_time + '  设置玩家' + p_o + ': 倍加;'
+
+                    Database.Create_DB()
+                    Database.New_operate(History_number, my_number + my_operation)
+                    Database.Close_database()
+
+                    History_number += 1
+
+                    # go to next step
+                    self.step = -1
+                    self.change_info(-1)
+                elif event.key() == 16777267:  # key 'F4' - half add
+                    # Get id
+                    self.player_option = self.player1_id
+                    # print(self.player_option)
+
+                    # Change its 'RATE' in sheet 'USER'
+                    Database.Create_DB()
+                    Database.Update_rate(self.player_option, 3)
+                    Database.Close_database()
+                    # add record to history
+                    p_o = chr(ord('A') + User_id_g.index(self.player_option))  # get p1`s code(ABCD....)
+                    self.history_list.addItem('')
+                    self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 设置玩家' + p_o + ': 半加')
+                    self.history_list.scrollToBottom()
+
+                    # Record in database
+                    my_number = '*OPT' + str(History_number) + ':  '
+                    my_time = QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss')
+                    my_operation = my_time + '  设置玩家' + p_o + ': 半加;'
+
+                    Database.Create_DB()
+                    Database.New_operate(History_number, my_number + my_operation)
+                    Database.Close_database()
+
+                    History_number += 1
+
+                    # go to next step
+                    self.step = -1
+                    self.change_info(-1)
+                elif event.key() == 16777268:  # key 'F5' - double sub
+                    # Get id
+                    self.player_option = self.player1_id
+                    # print(self.player_option)
+
+                    # Change its 'RATE' in sheet 'USER'
+                    Database.Create_DB()
+                    Database.Update_rate(self.player_option, 4)
+                    Database.Close_database()
+                    # add record to history
+                    p_o = chr(ord('A') + User_id_g.index(self.player_option))  # get p1`s code(ABCD....)
+                    self.history_list.addItem('')
+                    self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 设置玩家' + p_o + ': 倍减')
+                    self.history_list.scrollToBottom()
+
+                    # Record in database
+                    my_number = '*OPT' + str(History_number) + ':  '
+                    my_time = QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss')
+                    my_operation = my_time + '  设置玩家' + p_o + ': 倍减;'
+
+                    Database.Create_DB()
+                    Database.New_operate(History_number, my_number + my_operation)
+                    Database.Close_database()
+
+                    History_number += 1
+
+                    # go to next step
+                    self.step = -1
+                    self.change_info(-1)
+                elif event.key() == 16777269:  # key 'F6' - half sub
+                    # Get id
+                    self.player_option = self.player1_id
+                    # print(self.player_option)
+
+                    # Change its 'RATE' in sheet 'USER'
+                    Database.Create_DB()
+                    Database.Update_rate(self.player_option, 5)
+                    Database.Close_database()
+                    # add record to history
+                    p_o = chr(ord('A') + User_id_g.index(self.player_option))  # get p1`s code(ABCD....)
+                    self.history_list.addItem('')
+                    self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 设置玩家' + p_o + ': 半减')
+                    self.history_list.scrollToBottom()
+
+                    # Record in database
+                    my_number = '*OPT' + str(History_number) + ':  '
+                    my_time = QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss')
+                    my_operation = my_time + '  设置玩家' + p_o + ': 半减;'
+
+                    Database.Create_DB()
+                    Database.New_operate(History_number, my_number + my_operation)
+                    Database.Close_database()
+
+                    History_number += 1
+
+                    # go to next step
+                    self.step = -1
+                    self.change_info(-1)
+
+        if self.step == -1 and result is True:
+            # get the symbol
+            # if self.right_button(event.key()) is True:
+            if (event.key() == 16777220) or (event.key() == 16777221):
+                txt = int(current_text)  # 'a' indicates the id of the current input,
                 b = False  # 'b' indicates whether there is a current id in the queue
                 for item in User_id_g:
-                    if item == a:
+                    if item == txt:
                         b = True
                         break
                 if b is False:
@@ -804,153 +951,26 @@ class UI(QWidget):
                     self.history_list.addItem('')
                     self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 出错！请输入正确的p1！')
                     self.history_list.scrollToBottom()
+
+                    self.step = -1
+                    self.change_info(-1)
+                else:
+                    self.player1_id = int(current_text)  # get p1`s id
+                    p1 = chr(ord('A') + User_id_g.index(self.player1_id))  # get p1`s code(ABCD....)
+
+                    self.history_list.addItem('')
+                    self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 确认玩家1: ' + p1)
+                    self.history_list.scrollToBottom()
+
                     self.step = 0
                     self.change_info(0)
-                else:
-                    ''' 1 - now the text in 'team_box' is a number
-                        2 - and 'step == 0' means it`s time to choose F1 / F2 '''
-                    if event.key() == 16777264:  # key 'F1' - Add
-                        self.symbol = 1
-                        self.player1_id = int(current_text)
-
-                        p1 = chr(ord('A') + User_id_g.index(self.player1_id))  # get p1`s code(ABCD....)
-                        self.history_list.addItem('')
-                        self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 确认玩家1: ' + p1)
-                        self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 确认操作: 加')
-                        self.history_list.scrollToBottom()
-                        # go to next step
-                        self.step = 1
-                        self.change_info(1)
-                    elif event.key() == 16777265:  # key 'F2' - Sub
-                        self.symbol = -1
-                        self.player1_id = int(current_text)
-
-                        p1 = chr(ord('A') + User_id_g.index(self.player1_id))  # get p1`s code(ABCD....)
-                        self.history_list.addItem('')
-                        self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 确认玩家1: ' + p1)
-                        self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 确认操作: 减')
-                        self.history_list.scrollToBottom()
-                        # go to next step
-                        self.step = 1
-                        self.change_info(1)
-                    elif event.key() == 16777266:  # key 'F3' - double add
-                        # Get id
-                        self.player_option = int(current_text)
-                        # print(self.player_option)
-
-                        # Change its 'RATE' in sheet 'USER'
-                        Database.Create_DB()
-                        Database.Update_rate(self.player_option, 2)
-                        Database.Close_database()
-                        # add record to history
-                        p_o = chr(ord('A') + User_id_g.index(self.player_option))  # get p1`s code(ABCD....)
-                        self.history_list.addItem('')
-                        self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 设置玩家' + p_o + ': 倍加')
-                        self.history_list.scrollToBottom()
-
-                        # Record in database
-                        my_number = '*OPT' + str(History_number) + ':  '
-                        my_time = QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss')
-                        my_operation = my_time + '  设置玩家' + p_o + ': 倍加;'
-
-                        Database.Create_DB()
-                        Database.New_operate(History_number, my_number + my_operation)
-                        Database.Close_database()
-
-                        History_number += 1
-
-                        # go to next step
-                        self.step = 0
-                    elif event.key() == 16777267:  # key 'F4' - half add
-                        # Get id
-                        self.player_option = int(current_text)
-                        # print(self.player_option)
-
-                        # Change its 'RATE' in sheet 'USER'
-                        Database.Create_DB()
-                        Database.Update_rate(self.player_option, 3)
-                        Database.Close_database()
-                        # add record to history
-                        p_o = chr(ord('A') + User_id_g.index(self.player_option))  # get p1`s code(ABCD....)
-                        self.history_list.addItem('')
-                        self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 设置玩家' + p_o + ': 半加')
-                        self.history_list.scrollToBottom()
-
-                        # Record in database
-                        my_number = '*OPT' + str(History_number) + ':  '
-                        my_time = QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss')
-                        my_operation = my_time + '  设置玩家' + p_o + ': 半加;'
-
-                        Database.Create_DB()
-                        Database.New_operate(History_number, my_number + my_operation)
-                        Database.Close_database()
-
-                        History_number += 1
-
-                        # go to next step
-                        self.step = 0
-                    elif event.key() == 16777268:  # key 'F5' - double sub
-                        # Get id
-                        self.player_option = int(current_text)
-                        # print(self.player_option)
-
-                        # Change its 'RATE' in sheet 'USER'
-                        Database.Create_DB()
-                        Database.Update_rate(self.player_option, 4)
-                        Database.Close_database()
-                        # add record to history
-                        p_o = chr(ord('A') + User_id_g.index(self.player_option))  # get p1`s code(ABCD....)
-                        self.history_list.addItem('')
-                        self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 设置玩家' + p_o + ': 倍减')
-                        self.history_list.scrollToBottom()
-
-                        # Record in database
-                        my_number = '*OPT' + str(History_number) + ':  '
-                        my_time = QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss')
-                        my_operation = my_time + '  设置玩家' + p_o + ': 倍减;'
-
-                        Database.Create_DB()
-                        Database.New_operate(History_number, my_number + my_operation)
-                        Database.Close_database()
-
-                        History_number += 1
-
-                        # go to next step
-                        self.step = 0
-                    elif event.key() == 16777269:  # key 'F6' - half sub
-                        # Get id
-                        self.player_option = int(current_text)
-                        # print(self.player_option)
-
-                        # Change its 'RATE' in sheet 'USER'
-                        Database.Create_DB()
-                        Database.Update_rate(self.player_option, 5)
-                        Database.Close_database()
-                        # add record to history
-                        p_o = chr(ord('A') + User_id_g.index(self.player_option))  # get p1`s code(ABCD....)
-                        self.history_list.addItem('')
-                        self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 设置玩家' + p_o + ': 半减')
-                        self.history_list.scrollToBottom()
-
-                        # Record in database
-                        my_number = '*OPT' + str(History_number) + ':  '
-                        my_time = QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss')
-                        my_operation = my_time + '  设置玩家' + p_o + ': 半减;'
-
-                        Database.Create_DB()
-                        Database.New_operate(History_number, my_number + my_operation)
-                        Database.Close_database()
-
-                        History_number += 1
-
-                        # go to next step
-                        self.step = 0
 
     def my_move(self, where):
         if where == 'out':
             self.team_box.move(-120, -50)
             # print('move out')
         elif where == 'in':
+            self.team_box.clear()
             self.team_box.setPlaceholderText('请输入金额')
             self.team_box.move(120, 65)
             # print('move in')
@@ -964,12 +984,14 @@ class UI(QWidget):
             return False
 
     def change_info(self, num):
-        if num == 0:
-            self.information_box.setText('<h3>输入玩家1并选择加减</h3>')
+        if num == -1:
+            self.information_box.setText('<h2>请输入玩家1</h2>')
+        elif num == 0:
+            self.information_box.setText('<h2>请选择加减</h2>')
         elif num == 1:
-            self.information_box.setText('<h3>输入玩家2并确认</h3>')
+            self.information_box.setText('<h2>请输入玩家2</h2>')
         elif num == 2:
-            self.information_box.setText('<h2>请输入金额</h2>')
+            self.information_box.setText('<h2>请输入金额并确认</h2>')
         else:
             pass
 
@@ -1075,8 +1097,10 @@ class UI(QWidget):
                 Database.Update_one(self.player1_id, p1_current_value)
                 Database.Update_one(self.player2_id, p2_current_value)
                 Database.Close_database()'''
-                p1_name = chr(ord('A') + self.player1_id - 1)
-                p2_name = chr(ord('A') + self.player2_id - 1)
+                # p1_name = chr(ord('A') + self.player1_id - 1)
+                # p2_name = chr(ord('A') + self.player2_id - 1)
+                p1_name = chr(ord('A') + p1_index)
+                p2_name = chr(ord('A') + p2_index)
 
                 '''
                 print('p1 name:' + p1_name + ';' + 'p2 name:' + p2_name)
