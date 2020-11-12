@@ -42,6 +42,12 @@ def Create_user():  # checked
             MY_LIMIT INT NOT NULL
         );''')
 
+    my_cursor.execute('''
+        CREATE TABLE IF NOT EXISTS OPERATE(
+            NUMBER INT PRIMARY KEY NOT NULL,
+            OPERATION VARCHAR NOT NULL
+        );''')
+
 
 def Insert_user(user_id, user_name, user_balance):  # checked
     '''
@@ -166,6 +172,24 @@ def New_Setting(new_max, new_min, new_limit):
         (new_max, new_min, new_limit, 1))
 
 
+def New_operate(my_num, my_text):
+    my_cursor.execute(
+        '''INSERT INTO OPERATE VALUES(?, ?);''', (my_num, my_text)
+    )
+
+
+def Get_operate():
+    my_cursor.execute('''SELECT * FROM OPERATE;''')
+    # print(my_cursor.fetchall())
+    return my_cursor.fetchall()
+
+
+def Delete_operate():
+    # cause there is no 'truncate' in sqlite3
+    # so that we use delete instead
+    my_cursor.execute('''DELETE FROM OPERATE''')
+
+
 def Close_database():  # checked
     '''
     Function: close_database()
@@ -215,6 +239,17 @@ if __name__ == '__main__':
     Insert_user(14, 'test14', 5000)
     Insert_user(15, 'test15', 5000)
     Insert_user(16, 'test16', 5000)
+    '''
+
+    '''
+    New_operate(1, '第一条操作')
+    New_operate(2, 'the second operation')
+    New_operate(3, 'disantiaocaozuo')
+    '''
+
+    '''
+    a = Get_operate()
+    print(a)
     '''
 
     Close_database()
