@@ -10,6 +10,7 @@ from PyQt5.QtCore import QTimer, Qt, QTime, QDate, QDateTime
 # Some global variables
 User_number_g = 0  # Total number of users / default 0
 User_id_g = [0] * 16  # Create a new array of size 16 to store user id
+User_limit_g = [0] * 16  # the limit of every player
 History_number = 1  # the count number of operations, reset when click the reset button
 
 
@@ -240,14 +241,20 @@ class UI_guide2(QWidget):
                                          '个用户:</h2>')  # change the title
                 if self.now_number == max_user:
                     self.next_button.setText('确认')
-            elif self.now_number == max_user:  # end insert
+            elif self.now_number == max_user:  # last insert
                 # 清空原有记录表, 用于存放当前次操作记录数据
                 Database.Create_DB()
                 Database.Delete_operate()
+                Database.Reset_rate()
+                result = Database.Get_Setting()
                 Database.Close_database()
-                # print(User_id_g)
-                self.close()
 
+                for i in range(max_user):
+                    User_limit_g[i] = result[0][3]
+                # print(User_limit_g)
+
+                # close current window
+                self.close()
                 # Draw the main UI interface according to the input
                 self.Draw_UI()
                 # set the focus on the LineEdit 'team_box' to accept the card id
@@ -633,7 +640,7 @@ class UI(QWidget):
         my_Setting.Get_Settings()
         my_Setting.show()
 
-    def Re_full(self):
+    def Re_full(self):  # unused
         # Switch between normal size and full screen display
         if self.isMaximized():
             self.showNormal()
@@ -643,10 +650,16 @@ class UI(QWidget):
             self.team_box.setFocus()
 
     def Re_next(self):
+        global User_number_g, User_limit_g
         # reset the 'rate' in database
         Database.Create_DB()
         Database.Reset_rate()
+        result = Database.Get_Setting()
         Database.Close_database()
+
+        # reset the limits
+        for i in range(User_number_g):
+            User_limit_g[i] = result[0][3]
 
         # Reset the title
         self.message_box_player1.setPixmap(QPixmap(Image.Unknown))
@@ -730,7 +743,7 @@ class UI(QWidget):
               R-Enter - 16777221
               Backspace - 16777219
         '''
-        global History_number, User_id_g, User_number_g
+        global History_number, User_id_g, User_number_g, User_limit_g
         # get the text in the 'team_box' then clear the box:
         ''' if it`s valid, use it
         if it`s invalid, ignore it '''
@@ -739,10 +752,32 @@ class UI(QWidget):
         # if event.key() != 16777220 and event.key() != 16777221:
         self.team_box.clear()
 
+        if event.key() == 16777216:  # esc: go to next term
+            self.history_list.addItem('')
+            self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 进入下一回合!')
+            self.history_list.scrollToBottom()
+
+            my_number = '*OPT' + str(History_number) + ':  '
+            my_time = QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss')
+            my_operation = '  进入下一回合'
+
+            Database.Create_DB()
+            Database.Next_term()
+            Database.New_operate(History_number, my_number + my_time + my_operation)
+            result = Database.Get_Setting()
+            Database.Close_database()
+
+            History_number += 1
+            for i in range(User_number_g):
+                User_limit_g[i] = result[0][3]
+
+            self.my_move('out', 1)
+            self.step = -1
+            self.change_info(-1)
+
         # Step 2: get the number(how much money to take)
         if self.step == 2 and result is True:
             if event.key() == 16777220 or event.key() == 16777221:  # press 'enter' to confirm
-                self.my_move('out', 1)
                 self.number = int(current_text)
                 self.team_box.clear()
 
@@ -756,41 +791,48 @@ class UI(QWidget):
                 self.history_list.addItem('操作完成')
                 self.history_list.scrollToBottom()
 
-                self.step = -1  # start from 'step = -1'
                 result = False
+                self.step = -1  # start from 'step = -1'
+                self.my_move('out', 1)
                 self.change_info(-1)
 
         # Step 1: get the player2`s id
         if self.step == 1 and result is True:
-            # Determine whether the currently entered id belongs to the current player
-            if self.right_button(event.key()) is True:
-                a = int(current_text)  # 'a' indicates the id of the current input,
-                # judge if p2`s id is in the user list
-                if a > User_number_g:
+            # if self.right_button(event.key()) is True:
+            if event.key() == 16777220 or event.key() == 16777221:  # press 'enter' to confirm
+                p2_num = int(current_text)  # 'a' indicates the id of the current input,
+                if p2_num > User_number_g:  # judge if p2`s id is in the user list
                     # there is no such id in the group 'User_group_g'
                     # print('no such id 2')
                     self.history_list.addItem('')
-                    self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 出错！请输入正确的p2！')
+                    self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 出错！请输入正确的p2!')
                     self.history_list.scrollToBottom()
 
                     result = False
                     self.my_move('out', 1)
                     self.step = -1
                     self.change_info(-1)
-                else:
-                    # Enter the correct id, then record the id of p2
-                    if event.key() == 16777220 or event.key() == 16777221:  # press 'enter' to confirm
-                        # self.player2_id = int(current_text)
-                        self.player2_id = User_id_g[int(current_text) - 1]
+                elif User_id_g[p2_num - 1] == self.player1_id:  # if p1 == p2, note error
+                    self.history_list.addItem('')
+                    self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 出错！p2与p1不能相同!')
+                    self.history_list.scrollToBottom()
 
-                        # p2 = chr(ord('A') + User_id_g.index(self.player2_id))
-                        p2 = 'player' + str(1 + User_id_g.index(self.player2_id))
-                        self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 确认玩家2: ' + p2)
-                        self.history_list.scrollToBottom()
+                    result = False
+                    self.my_move('out', 1)
+                    self.step = -1
+                    self.change_info(-1)
+                else:  # Enter the correct id, then record the id of p2
+                    # self.player2_id = int(current_text)
+                    self.player2_id = User_id_g[p2_num - 1]
 
-                        self.my_move('in', 1)
-                        self.step = 2
-                        self.change_info(2)
+                    # p2 = chr(ord('A') + User_id_g.index(self.player2_id))
+                    p2 = 'player' + str(1 + User_id_g.index(self.player2_id))
+                    self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 确认玩家2: ' + p2)
+                    self.history_list.scrollToBottom()
+
+                    self.my_move('in', 1)
+                    self.step = 2
+                    self.change_info(2)
 
         # Step 0: get the symbol add or sub
         if self.step == 0:
@@ -947,10 +989,10 @@ class UI(QWidget):
             # get the player1`s id
             # if self.right_button(event.key()) is True:
             if (event.key() == 16777220) or (event.key() == 16777221):
-                txt = int(current_text)  # 'a' indicates the id of the current input,
+                p1_num = int(current_text)  # 'a' indicates the id of the current input,
                 b = False  # 'b' indicates whether there is a current id in the queue
                 for item in User_id_g:
-                    if item == txt:
+                    if item == p1_num:
                         b = True
                         break
                 if b is False:
@@ -963,7 +1005,7 @@ class UI(QWidget):
                     self.step = -1
                     self.change_info(-1)
                 else:
-                    self.player1_id = int(current_text)  # get p1`s id
+                    self.player1_id = p1_num  # get p1`s id
                     # p1 = chr(ord('A') + User_id_g.index(self.player1_id))  # get p1`s code(ABCD....)
                     p1 = 'player' + str(1 + User_id_g.index(self.player1_id))
 
@@ -990,7 +1032,7 @@ class UI(QWidget):
     def right_button(self, button_number):
         if 16777264 <= button_number <= 16777269:  # F1 - F6
             return True
-        elif button_number == 16777220 or button_number == 16777221:
+        elif button_number == 16777220 or button_number == 16777221:  # L enter / R enter
             return True
         else:
             return False
@@ -1028,7 +1070,7 @@ class UI(QWidget):
         # print(str(p1_rate_get) + '/' + str(p2_rate_get))
         Database.Close_database()
 
-        if p1_rate_get == 1:
+        if p1_rate_get == 1:  # get p1`s rate
             p1_rate_add = 1
             p1_rate_sub = 1
         elif p1_rate_get == 2:
@@ -1044,7 +1086,7 @@ class UI(QWidget):
             p1_rate_add = 1
             p1_rate_sub = 0.5
 
-        if p2_rate_get == 1:
+        if p2_rate_get == 1:  # get p2`s rate
             p2_rate_add = 1
             p2_rate_sub = 1
         elif p2_rate_get == 2:
@@ -1062,44 +1104,52 @@ class UI(QWidget):
 
         # print(str(p1_rate_add) + '/' + str(p1_rate_sub) + '/' + str(p2_rate_add) + '/' + str(p2_rate_sub))
 
-        # 1 The information prompt area displays Player 1 and Player 2
+        # *1 The information prompt area displays Player 1 and Player 2
         self.message_box_player1.setPixmap(QPixmap(Image.Team[p1_index]))  # p1
         self.message_box_player2.setPixmap(QPixmap(Image.Team[p2_index]))  # p2
-        self.message_box_number.setText('<h2>' + str(self.number) + '</h2>')  # number
+
+        # *2 Calculate the amount of the operation
+        if self.symbol == 1:  # p1+/p2-
+            should_number = self.number * p1_rate_add * p2_rate_sub
+        elif self.symbol == -1:  # p1-/p2+
+            should_number = self.number * p1_rate_sub * p2_rate_add
+        # print(should_number)
+        self.message_box_number.setText('<h2>' + str(should_number) + '</h2>')  # the number should be operated
         self.message_box_number.setAlignment(Qt.AlignCenter)
 
-        # 2 Determine whether the operation succeeded or failed
-        # (1) Deduction exceeds limit - fail
-        should_number = max(p1_rate_sub, p2_rate_sub) * self.number
-        if should_number > self.my_limit:
+        # 3 Determine whether the operation succeeded or failed
+        '''print(self.player1_id)
+        print(self.player2_id)
+        print(User_id_g.index(self.player1_id) + 1)
+        print(User_id_g.index(self.player2_id) + 1)'''
+        # (1) should_number > limit(left) -- fail
+        if (self.symbol == 1 and should_number > User_limit_g[User_id_g.index(self.player2_id)]) or (self.symbol == -1 and should_number > User_limit_g[User_id_g.index(self.player1_id)]):
             self.message_box_result.setPixmap(QPixmap(Image.Fail))
+            # print('超过单回合限额')
         else:
-            # (2) Insufficient balance in 2 cases
-            # Player 1 takes player 2’s money, but player 2’s money is not enough
-            if self.symbol == 1 and p2_current_value < (self.number * p2_rate_sub):
+            # (2)should_number > p1/p2`s money left(not enough)
+            # *2.1 p1+/p2-: p2 not enough
+            if self.symbol == 1 and p2_current_value < should_number:
                 self.message_box_result.setPixmap(QPixmap(Image.Fail))
-            # Player 2 takes player 1’s money, but player 1’s money is not enough
-            elif self.symbol == -1 and p1_current_value < (self.number * p1_rate_sub):
+            # *2.2 p1-/p2+: p1 not enough
+            elif self.symbol == -1 and p1_current_value < should_number:
                 self.message_box_result.setPixmap(QPixmap(Image.Fail))
+            # *2.3 both are enough
             else:
                 # (3) Successful operation
                 self.message_box_result.setPixmap(QPixmap(Image.Success))
-                # p1 takes p2`s money(p1+/p2-)
+                # 3.1 p1+/p2-
                 if self.symbol == 1:
-                    p1_current_value += (self.number * p1_rate_add)  # Calculate balance
-                    p2_current_value -= (self.number * p2_rate_sub)
+                    p1_current_value += should_number
+                    p2_current_value -= should_number
+                    User_limit_g[User_id_g.index(self.player2_id)] -= should_number  # *update the limit left
                     opt = ' 加 '
-                # p2 takes p1`s money(p1-/p2+)
+                # 3.2 p1-/p2+
                 elif self.symbol == -1:
-                    p1_current_value -= (self.number * p1_rate_sub)  # Calculate balance
-                    p2_current_value += (self.number * p2_rate_add)
+                    p1_current_value -= should_number
+                    p2_current_value += should_number
+                    User_limit_g[User_id_g.index(self.player1_id)] -= should_number  # *update the limit left
                     opt = ' 减 '
-
-                # double/half add/sub only takes effect once
-                Database.Create_DB()
-                Database.Update_rate(self.player1_id, 1)
-                Database.Update_rate(self.player2_id, 1)
-                Database.Close_database()
 
                 self.value_group[p1_index] = p1_current_value  # Update balance
                 self.value_group[p2_index] = p2_current_value
@@ -1133,6 +1183,7 @@ class UI(QWidget):
                 Database.Close_database()
 
                 History_number += 1
+                # print(User_limit_g)
 
                 self.Set_value()
 
@@ -1236,14 +1287,19 @@ class UI_setting(QWidget):
         self.close()
 
     def Re_check(self):
+        global User_limit_g, User_number_g
         # Confirm all changes and Set new setting value
         new_max = int(self.max_box.text())
         new_min = int(self.min_box.text())
         new_limit = int(self.limit_box.text())
 
         Database.Create_DB()  # connect
+        Database.Reset_rate()
         Database.New_Setting(new_max, new_min, new_limit)
         Database.Close_database()  # disconnect
+
+        for i in range(User_number_g):
+            User_limit_g[i] = new_limit
 
         my_UI.Set_range()
         my_UI.team_box.setFocus()
