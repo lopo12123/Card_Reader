@@ -22,7 +22,8 @@ def Create_user():  # checked
       | ID        |   INT     |   √   |   √   |   NULL          |
       | NAME      |   CHAR    |   √   |       |   NULL          |
       | BALANCE   |   INT     |   √   |       |   NULL          |
-      | RATE      |   INT     |   √   |       |   1             |
+      | RATE_NOW  |   INT     |   √   |       |   1             |
+      | RATE_NEXT |   INT     |   √   |       |   1             |
       -----------------------------------------------------------
     '''
 
@@ -31,7 +32,8 @@ def Create_user():  # checked
             ID INT PRIMARY KEY NOT NULL,
             NAME CHAR NOT NULL,
             BALANCE INT NOT NULL,
-            RATE INT NOT NULL
+            RATE_NOW INT NOT NULL,
+            RATE_NEXT INT NOT NULL
         );''')
 
     my_cursor.execute('''
@@ -59,7 +61,7 @@ def Insert_user(user_id, user_name, user_balance):  # checked
     insert_id = user_id  # Receive three new data
     insert_name = user_name
     insert_balance = user_balance
-    my_cursor.execute('''INSERT INTO USER VALUES(?, ?, ?, 1);''',
+    my_cursor.execute('''INSERT INTO USER VALUES(?, ?, ?, 1, 1);''',
                       (insert_id, insert_name, insert_balance))
 
 
@@ -118,7 +120,7 @@ def Update_one(user_id, new_balance):  # checked
                       (update_balance, update_id))
 
 
-def Update_rate(user_id, new_rate):  # checked
+def Update_rate(user_id, rate_next):  # checked
     '''
     About 'RATE':
     1 - normal;
@@ -129,16 +131,26 @@ def Update_rate(user_id, new_rate):  # checked
     '''
 
     update_id = user_id
-    update_rate = new_rate
-    my_cursor.execute('''UPDATE USER SET RATE = ? WHERE ID = ?;''',
+    update_rate = rate_next
+    my_cursor.execute('''UPDATE USER SET RATE_NEXT = ? WHERE ID = ?;''',
                       (update_rate, update_id))
+
+
+def Next_term():
+    '''
+    rate_now = rate_next
+    rate_next = 1(default)
+    '''
+    my_cursor.execute('''UPDATE USER SET RATE_NOW = RATE_NEXT;''')
+    my_cursor.execute('''UPDATE USER SET RATE_NEXT = 1;''')
 
 
 def Reset_rate():  # checked
     '''
     reset all the rate to '1'
     '''
-    my_cursor.execute('''UPDATE USER SET RATE = 1;''')
+    my_cursor.execute('''UPDATE USER SET RATE_NOW = 1;''')
+    my_cursor.execute('''UPDATE USER SET RATE_NEXT = 1;''')
 
 
 def Update_user(user_id, new_name, new_balance):  # checked
