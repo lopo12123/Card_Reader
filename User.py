@@ -10,6 +10,7 @@ from PyQt5.QtCore import QTimer, Qt, QTime, QDate, QDateTime
 # Some global variables
 User_number_g = 0  # Total number of users / default 0
 User_id_g = [0] * 16  # Create a new array of size 16 to store user id
+User_limit_g = [0] * 16  # the limit of every player
 History_number = 1  # the count number of operations, reset when click the reset button
 
 
@@ -25,22 +26,22 @@ class Image:
 
     # Team label (1 - 16)
     Team = [] * 16
-    Team.append('./Resources/Background/Team1.jpg')  # Team[0]
-    Team.append('./Resources/Background/Team2.jpg')
-    Team.append('./Resources/Background/Team3.jpg')
-    Team.append('./Resources/Background/Team4.jpg')
-    Team.append('./Resources/Background/Team5.jpg')
-    Team.append('./Resources/Background/Team6.jpg')
-    Team.append('./Resources/Background/Team7.jpg')
-    Team.append('./Resources/Background/Team8.jpg')
-    Team.append('./Resources/Background/Team9.jpg')
-    Team.append('./Resources/Background/Team10.jpg')
-    Team.append('./Resources/Background/Team11.jpg')
-    Team.append('./Resources/Background/Team12.jpg')
-    Team.append('./Resources/Background/Team13.jpg')
-    Team.append('./Resources/Background/Team14.jpg')
-    Team.append('./Resources/Background/Team15.jpg')
-    Team.append('./Resources/Background/Team16.jpg')
+    Team.append('./Resources/Background/Team1.png')  # Team[0]
+    Team.append('./Resources/Background/Team2.png')
+    Team.append('./Resources/Background/Team3.png')
+    Team.append('./Resources/Background/Team4.png')
+    Team.append('./Resources/Background/Team5.png')
+    Team.append('./Resources/Background/Team6.png')
+    Team.append('./Resources/Background/Team7.png')
+    Team.append('./Resources/Background/Team8.png')
+    Team.append('./Resources/Background/Team9.png')
+    Team.append('./Resources/Background/Team10.png')
+    Team.append('./Resources/Background/Team11.png')
+    Team.append('./Resources/Background/Team12.png')
+    Team.append('./Resources/Background/Team13.png')
+    Team.append('./Resources/Background/Team14.png')
+    Team.append('./Resources/Background/Team15.png')
+    Team.append('./Resources/Background/Team16.png')
     Unknown = './Resources/Background/Unknown.png'  # symbol '?'
     Hand = './Resources/Background/Hand.png'  # symbol 'hand'
 
@@ -214,7 +215,7 @@ class UI_guide2(QWidget):
         self.next_button.clicked.connect(self.Re_next)
 
     def Re_next(self):
-        global User_number_g, User_id_g, flag
+        global User_number_g, User_id_g, flag, History_number
 
         box_text = self.number_box.text()
 
@@ -240,14 +241,27 @@ class UI_guide2(QWidget):
                                          '个用户:</h2>')  # change the title
                 if self.now_number == max_user:
                     self.next_button.setText('确认')
-            elif self.now_number == max_user:  # end insert
+            elif self.now_number == max_user:  # last insert
+                my_number = '*OPT' + str(History_number) + ':  '
+                my_time = QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss')
+                my_operation = '  进入第1回合'
+
                 # 清空原有记录表, 用于存放当前次操作记录数据
                 Database.Create_DB()
                 Database.Delete_operate()
+                Database.Reset_rate()
+                Database.New_operate(History_number, my_number + my_time + my_operation)
+                result = Database.Get_Setting()
                 Database.Close_database()
-                # print(User_id_g)
-                self.close()
 
+                History_number += 1
+
+                for i in range(max_user):
+                    User_limit_g[i] = result[0][3]
+                # print(User_limit_g)
+
+                # close current window
+                self.close()
                 # Draw the main UI interface according to the input
                 self.Draw_UI()
                 # set the focus on the LineEdit 'team_box' to accept the card id
@@ -316,6 +330,7 @@ class UI(QWidget):
         self.player2_id = -1  # if it == -1 -> didn`t get this id
         self.symbol = 0  # take - '1'; give - '-1'
         self.number = -1  # how much money to take
+        self.round = 1  # start from round 1
 
         # about display
         ''' h_layout_group(QHBoxLayout)
@@ -357,7 +372,9 @@ class UI(QWidget):
         self.focus_box.move(-20, -20)  # move out of the screen
 
         '''Add various controls'''
-        # Four labels display prompt information
+        # Five labels display prompt information
+        self.message_box_round = QLabel('<h2>当前回合: ' + str(self.round) + '</h2>', self)
+
         self.message_box_player1 = QLabel('Left box', self)
         self.message_box_player1.setPixmap(QPixmap(Image.Unknown))
 
@@ -375,7 +392,7 @@ class UI(QWidget):
         self.message_box_result.setPixmap(QPixmap(Image.Success))
 
         # Three buttons: exit, setting and maximize
-        self.information_box = QLabel('<h2>请输入玩家1</h2>', self)  # information
+        self.information_box = QLabel('<h2>请输入玩家1(刷卡)</h2>', self)  # information
         self.information_box.setAlignment(Qt.AlignCenter)
         self.information_box.setMinimumSize(50, 60)
 
@@ -421,6 +438,7 @@ class UI(QWidget):
         # line 1 - a message box
         self.h_layout_head = QHBoxLayout()
         self.h_layout_head.addStretch()
+        self.h_layout_head.addWidget(self.message_box_round)  # round: number
         self.h_layout_head.addWidget(self.message_box_player1)  # player1
         self.h_layout_head.addWidget(self.message_box_action)  # action
         self.h_layout_head.addWidget(self.message_box_player2)  # player2
@@ -618,7 +636,7 @@ class UI(QWidget):
         fo = open('历史记录.txt', 'w')  # 文件只写, 新操作会覆盖旧文档
         for item in history_result:
             fo.write(item[1])
-            fo.write('\n')  # new line
+            fo.write('\n\n')  # new line
         fo.close()
 
         self.history_list.addItem('')  # notice the user
@@ -633,7 +651,7 @@ class UI(QWidget):
         my_Setting.Get_Settings()
         my_Setting.show()
 
-    def Re_full(self):
+    def Re_full(self):  # unused
         # Switch between normal size and full screen display
         if self.isMaximized():
             self.showNormal()
@@ -642,11 +660,17 @@ class UI(QWidget):
             self.showMaximized()
             self.team_box.setFocus()
 
-    def Re_next(self):
+    def Re_next(self):  # go to next round
+        global User_number_g, User_limit_g
         # reset the 'rate' in database
         Database.Create_DB()
         Database.Reset_rate()
+        result = Database.Get_Setting()
         Database.Close_database()
+
+        # reset the limits
+        for i in range(User_number_g):
+            User_limit_g[i] = result[0][3]
 
         # Reset the title
         self.message_box_player1.setPixmap(QPixmap(Image.Unknown))
@@ -662,6 +686,9 @@ class UI(QWidget):
         self.change_info(-1)
         self.team_box.clear()
 
+        self.round = 1
+        self.message_box_round.setText('<h2>当前回合: ' + str(self.round) + '</h2>')
+
         # Record in history
         self.history_list.addItem('')
         self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 重置成功！')
@@ -671,7 +698,7 @@ class UI(QWidget):
         global History_number
         my_number = '*OPT' + str(History_number) + ':  '
         my_time = QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss')
-        my_operation = my_time + '  重置数据;'
+        my_operation = my_time + '  重置数据, 重新开始; 进入第1回合'
 
         Database.Create_DB()
         Database.New_operate(History_number, my_number + my_operation)
@@ -724,13 +751,15 @@ class UI(QWidget):
               F3 - 16777266 - Double add: multiply the added value by 2
               F4 - 16777267 - Half add: the added value is halved
               F5 - 16777268 - Double sub: multiply the subtracted value by 2
-              F6 - 16777269 - Half sub: Decrease by half
+              F6 - 16777269 - * Half sub: Decrease by half
               '.' - 46
               L-Enter - 16777220
               R-Enter - 16777221
               Backspace - 16777219
         '''
-        global History_number
+        # print(event.key())
+
+        global History_number, User_id_g, User_number_g, User_limit_g
         # get the text in the 'team_box' then clear the box:
         ''' if it`s valid, use it
         if it`s invalid, ignore it '''
@@ -739,10 +768,35 @@ class UI(QWidget):
         # if event.key() != 16777220 and event.key() != 16777221:
         self.team_box.clear()
 
+        if event.key() == 16777216:  # esc: go to next term
+            self.history_list.addItem('')
+            self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 进入下一回合!')
+            self.history_list.scrollToBottom()
+
+            self.round += 1
+            my_number = '*OPT' + str(History_number) + ':  '
+            my_time = QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss')
+            my_operation = '  进入第' + str(self.round) + '回合'
+
+            self.message_box_round.setText('<h2>当前回合: ' + str(self.round) + '</h2>')
+
+            Database.Create_DB()
+            Database.Next_term()
+            Database.New_operate(History_number, my_number + my_time + my_operation)
+            result = Database.Get_Setting()
+            Database.Close_database()
+
+            History_number += 1
+            for i in range(User_number_g):
+                User_limit_g[i] = result[0][3]
+
+            self.my_move('out', 1)
+            self.step = -1
+            self.change_info(-1)
+
         # Step 2: get the number(how much money to take)
         if self.step == 2 and result is True:
             if event.key() == 16777220 or event.key() == 16777221:  # press 'enter' to confirm
-                self.my_move('out')
                 self.number = int(current_text)
                 self.team_box.clear()
 
@@ -756,47 +810,50 @@ class UI(QWidget):
                 self.history_list.addItem('操作完成')
                 self.history_list.scrollToBottom()
 
-                self.step = -1  # start from 'step = -1'
                 result = False
+                self.step = -1  # start from 'step = -1'
+                self.my_move('out', 1)
                 self.change_info(-1)
 
         # Step 1: get the player2`s id
         if self.step == 1 and result is True:
-            # Determine whether the currently entered id belongs to the current player
-            if self.right_button(event.key()) is True:
-                a = int(current_text)  # 'a' indicates the id of the current input,
-                b = False  # 'b' indicates whether there is a current id in the queue
-                for item in User_id_g:
-                    if item == a:
-                        b = True
-                        break
-                if b is False:
+            # if self.right_button(event.key()) is True:
+            if event.key() == 16777220 or event.key() == 16777221:  # press 'enter' to confirm
+                p2_num = int(current_text)  # 'a' indicates the id of the current input,
+                if p2_num > User_number_g:  # judge if p2`s id is in the user list
                     # there is no such id in the group 'User_group_g'
                     # print('no such id 2')
                     self.history_list.addItem('')
-                    self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 出错！请输入正确的p2！')
+                    self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 出错！请输入正确的p2!')
                     self.history_list.scrollToBottom()
-                    self.step = -1
+
                     result = False
+                    self.my_move('out', 1)
+                    self.step = -1
                     self.change_info(-1)
-                else:
-                    # Enter the correct id, then record the id of p2
-                    if event.key() == 16777220 or event.key() == 16777221:  # press 'enter' to confirm
-                        self.player2_id = int(current_text)
+                elif User_id_g[p2_num - 1] == self.player1_id:  # if p1 == p2, note error
+                    self.history_list.addItem('')
+                    self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 出错！p2与p1不能相同!')
+                    self.history_list.scrollToBottom()
 
-                        p2 = chr(ord('A') + User_id_g.index(self.player2_id))
-                        if self.symbol == 1:
-                            self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 确认玩家2: ' + p2)
-                            self.history_list.scrollToBottom()
-                        elif self.symbol == -1:
-                            self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 确认玩家2: ' + p2)
-                            self.history_list.scrollToBottom()
+                    result = False
+                    self.my_move('out', 1)
+                    self.step = -1
+                    self.change_info(-1)
+                else:  # Enter the correct id, then record the id of p2
+                    # self.player2_id = int(current_text)
+                    self.player2_id = User_id_g[p2_num - 1]
 
-                        self.my_move('in')
-                        self.step = 2
-                        self.change_info(2)
+                    # p2 = chr(ord('A') + User_id_g.index(self.player2_id))
+                    p2 = 'player' + str(1 + User_id_g.index(self.player2_id))
+                    self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 确认玩家2: ' + p2)
+                    self.history_list.scrollToBottom()
 
-        # Step 0: know player1`s id
+                    self.my_move('in', 1)
+                    self.step = 2
+                    self.change_info(2)
+
+        # Step 0: get the symbol add or sub
         if self.step == 0:
             # Determine whether the currently entered id belongs to the current player
             if self.right_button(event.key()) is True:
@@ -828,7 +885,9 @@ class UI(QWidget):
                     Database.Update_rate(self.player_option, 2)
                     Database.Close_database()
                     # add record to history
-                    p_o = chr(ord('A') + User_id_g.index(self.player_option))  # get p1`s code(ABCD....)
+                    # p_o = chr(ord('A') + User_id_g.index(self.player_option))  # get p1`s code(ABCD....)
+                    p_o = 'player' + str(1 + User_id_g.index(self.player_option))
+
                     self.history_list.addItem('')
                     self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 设置玩家' + p_o + ': 倍加')
                     self.history_list.scrollToBottom()
@@ -857,7 +916,9 @@ class UI(QWidget):
                     Database.Update_rate(self.player_option, 3)
                     Database.Close_database()
                     # add record to history
-                    p_o = chr(ord('A') + User_id_g.index(self.player_option))  # get p1`s code(ABCD....)
+                    # p_o = chr(ord('A') + User_id_g.index(self.player_option))  # get p1`s code(ABCD....)
+                    p_o = 'player' + str(1 + User_id_g.index(self.player_option))
+
                     self.history_list.addItem('')
                     self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 设置玩家' + p_o + ': 半加')
                     self.history_list.scrollToBottom()
@@ -886,7 +947,9 @@ class UI(QWidget):
                     Database.Update_rate(self.player_option, 4)
                     Database.Close_database()
                     # add record to history
-                    p_o = chr(ord('A') + User_id_g.index(self.player_option))  # get p1`s code(ABCD....)
+                    # p_o = chr(ord('A') + User_id_g.index(self.player_option))  # get p1`s code(ABCD....)
+                    p_o = 'player' + str(1 + User_id_g.index(self.player_option))
+
                     self.history_list.addItem('')
                     self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 设置玩家' + p_o + ': 倍减')
                     self.history_list.scrollToBottom()
@@ -915,7 +978,9 @@ class UI(QWidget):
                     Database.Update_rate(self.player_option, 5)
                     Database.Close_database()
                     # add record to history
-                    p_o = chr(ord('A') + User_id_g.index(self.player_option))  # get p1`s code(ABCD....)
+                    # p_o = chr(ord('A') + User_id_g.index(self.player_option))  # get p1`s code(ABCD....)
+                    p_o = 'player' + str(1 + User_id_g.index(self.player_option))
+
                     self.history_list.addItem('')
                     self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 设置玩家' + p_o + ': 半减')
                     self.history_list.scrollToBottom()
@@ -935,14 +1000,18 @@ class UI(QWidget):
                     self.step = -1
                     self.change_info(-1)
 
+                if self.step == 1:
+                    # show the team_box to get the player2`s number
+                    self.my_move('in', 2)
+
         if self.step == -1 and result is True:
-            # get the symbol
+            # get the player1`s id
             # if self.right_button(event.key()) is True:
             if (event.key() == 16777220) or (event.key() == 16777221):
-                txt = int(current_text)  # 'a' indicates the id of the current input,
+                p1_num = int(current_text)  # 'a' indicates the id of the current input,
                 b = False  # 'b' indicates whether there is a current id in the queue
                 for item in User_id_g:
-                    if item == txt:
+                    if item == p1_num:
                         b = True
                         break
                 if b is False:
@@ -955,8 +1024,9 @@ class UI(QWidget):
                     self.step = -1
                     self.change_info(-1)
                 else:
-                    self.player1_id = int(current_text)  # get p1`s id
-                    p1 = chr(ord('A') + User_id_g.index(self.player1_id))  # get p1`s code(ABCD....)
+                    self.player1_id = p1_num  # get p1`s id
+                    # p1 = chr(ord('A') + User_id_g.index(self.player1_id))  # get p1`s code(ABCD....)
+                    p1 = 'player' + str(1 + User_id_g.index(self.player1_id))
 
                     self.history_list.addItem('')
                     self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 确认玩家1: ' + p1)
@@ -965,38 +1035,41 @@ class UI(QWidget):
                     self.step = 0
                     self.change_info(0)
 
-    def my_move(self, where):
+    def my_move(self, where, step_num):
         if where == 'out':
             self.team_box.move(-120, -50)
             # print('move out')
         elif where == 'in':
             self.team_box.clear()
-            self.team_box.setPlaceholderText('请输入金额')
+            if step_num == 1:
+                self.team_box.setPlaceholderText('请输入金额')
+            elif step_num == 2:
+                self.team_box.setPlaceholderText('请输入玩家2序号')
             self.team_box.move(120, 65)
             # print('move in')
 
     def right_button(self, button_number):
         if 16777264 <= button_number <= 16777269:  # F1 - F6
             return True
-        elif button_number == 16777220 or button_number == 16777221:
+        elif button_number == 16777220 or button_number == 16777221:  # L enter / R enter
             return True
         else:
             return False
 
     def change_info(self, num):
         if num == -1:
-            self.information_box.setText('<h2>请输入玩家1</h2>')
+            self.information_box.setText('<h2>请输入玩家1(刷卡)</h2>')
         elif num == 0:
             self.information_box.setText('<h2>请选择加减</h2>')
         elif num == 1:
-            self.information_box.setText('<h2>请输入玩家2</h2>')
+            self.information_box.setText('<h2>请输入玩家2序号并确认</h2>')
         elif num == 2:
             self.information_box.setText('<h2>请输入金额并确认</h2>')
         else:
             pass
 
     def Solve(self):
-        global User_id_g
+        global User_id_g, History_number
 
         # Find out p1 and p2`s index in 'User_id_g[]'
         for item in User_id_g:
@@ -1016,7 +1089,7 @@ class UI(QWidget):
         # print(str(p1_rate_get) + '/' + str(p2_rate_get))
         Database.Close_database()
 
-        if p1_rate_get == 1:
+        if p1_rate_get == 1:  # get p1`s rate
             p1_rate_add = 1
             p1_rate_sub = 1
         elif p1_rate_get == 2:
@@ -1032,7 +1105,7 @@ class UI(QWidget):
             p1_rate_add = 1
             p1_rate_sub = 0.5
 
-        if p2_rate_get == 1:
+        if p2_rate_get == 1:  # get p2`s rate
             p2_rate_add = 1
             p2_rate_sub = 1
         elif p2_rate_get == 2:
@@ -1050,77 +1123,93 @@ class UI(QWidget):
 
         # print(str(p1_rate_add) + '/' + str(p1_rate_sub) + '/' + str(p2_rate_add) + '/' + str(p2_rate_sub))
 
-        # 1 The information prompt area displays Player 1 and Player 2
+        # *1 The information prompt area displays Player 1 and Player 2
         self.message_box_player1.setPixmap(QPixmap(Image.Team[p1_index]))  # p1
         self.message_box_player2.setPixmap(QPixmap(Image.Team[p2_index]))  # p2
-        self.message_box_number.setText('<h2>' + str(self.number) + '</h2>')  # number
-        self.message_box_number.setAlignment(Qt.AlignCenter)
 
-        # 2 Determine whether the operation succeeded or failed
-        # (1) Deduction exceeds limit - fail
-        should_number = max(p1_rate_sub, p2_rate_sub) * self.number
-        if should_number > self.my_limit:
-            self.message_box_result.setPixmap(QPixmap(Image.Fail))
+        # *2 Calculate the amount of the operation
+        if self.symbol == 1:  # p1+/p2-
+            should_number = self.number * p1_rate_add * p2_rate_sub  # p1抢夺p2，计算p1的'倍加'和p2的'半减'效果（是否存在）
+        elif self.symbol == -1:  # p1-/p2+
+            # should_number = self.number * p1_rate_sub * p2_rate_add
+            should_number = self.number * p2_rate_add  # p1主动给p2， 不计算半减效果
+        # print(should_number)
+
+        # 3 Determine whether the operation succeeded or failed
+        '''print(self.player1_id)
+        print(self.player2_id)
+        print(User_id_g.index(self.player1_id) + 1)
+        print(User_id_g.index(self.player2_id) + 1)'''
+        # (1) should_number > limit(left) -- fail
+        if (self.symbol == 1 and should_number > User_limit_g[User_id_g.index(self.player2_id)]) or (self.symbol == -1 and should_number > User_limit_g[User_id_g.index(self.player1_id)]):
+            # self.message_box_result.setPixmap(QPixmap(Image.Fail))  # 超过限额，扣完所有剩余额度
+            self.message_box_result.setPixmap(QPixmap(Image.Success))
+
+            all_left = User_limit_g[User_id_g.index(self.player2_id)]  # all the money left
+            should_number = all_left  # change the 'should_number'
         else:
-            # (2) Insufficient balance in 2 cases
-            # Player 1 takes player 2’s money, but player 2’s money is not enough
-            if self.symbol == 1 and p2_current_value < (self.number * p2_rate_sub):
-                self.message_box_result.setPixmap(QPixmap(Image.Fail))
-            # Player 2 takes player 1’s money, but player 1’s money is not enough
-            elif self.symbol == -1 and p1_current_value < (self.number * p1_rate_sub):
-                self.message_box_result.setPixmap(QPixmap(Image.Fail))
+            # (2)should_number > p1/p2`s money left(not enough)
+            # * solution: take off all the money left
+            # *2.1 p1+/p2-: p2 not enough
+            if self.symbol == 1 and p2_current_value < should_number:
+                # self.message_box_result.setPixmap(QPixmap(Image.Fail))
+                self.message_box_result.setPixmap(QPixmap(Image.Success))
+                should_number = p2_current_value
+            # *2.2 p1-/p2+: p1 not enough
+            elif self.symbol == -1 and p1_current_value < should_number:
+                # self.message_box_result.setPixmap(QPixmap(Image.Fail))
+                self.message_box_result.setPixmap(QPixmap(Image.Success))
+                should_number = p1_current_value
+            # *2.3 both are enough
             else:
                 # (3) Successful operation
                 self.message_box_result.setPixmap(QPixmap(Image.Success))
-                # p1 takes p2`s money(p1+/p2-)
-                if self.symbol == 1:
-                    p1_current_value += (self.number * p1_rate_add)  # Calculate balance
-                    p2_current_value -= (self.number * p2_rate_sub)
-                    opt = ' 加 '
-                # p2 takes p1`s money(p1-/p2+)
-                elif self.symbol == -1:
-                    p1_current_value -= (self.number * p1_rate_sub)  # Calculate balance
-                    p2_current_value += (self.number * p2_rate_add)
-                    opt = ' 减 '
+                # 3.1 p1+/p2-
 
-                # double/half add/sub only takes effect once
-                Database.Create_DB()
-                Database.Update_rate(self.player1_id, 1)
-                Database.Update_rate(self.player2_id, 1)
-                Database.Close_database()
+        # ---- solve part ----
 
-                self.value_group[p1_index] = p1_current_value  # Update balance
-                self.value_group[p2_index] = p2_current_value
+        if self.symbol == 1:
+            p1_current_value += should_number
+            p2_current_value -= should_number
+            User_limit_g[User_id_g.index(self.player2_id)] -= should_number  # *update the limit left
+            opt = ' 加 '
+        # 3.2 p1-/p2+
+        elif self.symbol == -1:
+            p1_current_value -= should_number
+            p2_current_value += should_number
+            User_limit_g[User_id_g.index(self.player1_id)] -= should_number  # *update the limit left
+            opt = ' 减 '
 
-                # * save the operation in the database
-                '''Database.Create_DB()
-                Database.Update_one(self.player1_id, p1_current_value)
-                Database.Update_one(self.player2_id, p2_current_value)
-                Database.Close_database()'''
-                # p1_name = chr(ord('A') + self.player1_id - 1)
-                # p2_name = chr(ord('A') + self.player2_id - 1)
-                p1_name = chr(ord('A') + p1_index)
-                p2_name = chr(ord('A') + p2_index)
+        self.value_group[p1_index] = p1_current_value  # Update balance
+        self.value_group[p2_index] = p2_current_value
 
-                '''
-                print('p1 name:' + p1_name + ';' + 'p2 name:' + p2_name)
-                print('金额:' + str(self.number))
-                print('p1:' + str(p1_current_value) + '  p2:' + str(p2_current_value))
-                '''
-                # the operate record
-                global History_number
-                my_number = '*OPT' + str(History_number) + ':  '
-                my_time = QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss')
-                my_operation = '  P1: ' + p1_name + ', P2: ' + p2_name + ', 金额: ' + str(self.number) + '; 操作: ' + p1_name + opt + p2_name + ' ' + str(self.number) + ';'
-                # print(my_number + my_time + my_operation)
+        # * save the operation in the database
+        '''Database.Create_DB()
+        Database.Update_one(self.player1_id, p1_current_value)
+        Database.Update_one(self.player2_id, p2_current_value)
+        Database.Close_database()'''
+        p1_name = 'player' + str(1 + p1_index)
+        p2_name = 'player' + str(1 + p2_index)
 
-                Database.Create_DB()
-                Database.New_operate(History_number, my_number + my_time + my_operation)
-                Database.Close_database()
+        # the operate record
+        my_number = '*OPT' + str(History_number) + ':  '
+        my_time = QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss')
+        my_operation = '  P1: ' + p1_name + ', P2: ' + p2_name + ', 金额: ' + str(self.number) + '; 实际操作: ' + p1_name + opt + p2_name + ' ' + str(should_number) + ';'
+        # print(my_number + my_time + my_operation)
 
-                History_number += 1
+        Database.Create_DB()
+        Database.New_operate(History_number, my_number + my_time + my_operation)
+        Database.Close_database()
 
-                self.Set_value()
+        History_number += 1
+        # print(User_limit_g)
+
+        self.Set_value()
+
+        # ---- solve part ----
+
+        self.message_box_number.setText('<h2>' + str(should_number) + '</h2>')  # the number should be operated
+        self.message_box_number.setAlignment(Qt.AlignCenter)
 
 
 class UI_setting(QWidget):
@@ -1222,16 +1311,23 @@ class UI_setting(QWidget):
         self.close()
 
     def Re_check(self):
+        global User_limit_g, User_number_g
         # Confirm all changes and Set new setting value
         new_max = int(self.max_box.text())
         new_min = int(self.min_box.text())
         new_limit = int(self.limit_box.text())
 
         Database.Create_DB()  # connect
+        Database.Reset_rate()
         Database.New_Setting(new_max, new_min, new_limit)
         Database.Close_database()  # disconnect
 
-        my_UI.Set_range()
+        for i in range(User_number_g):
+            User_limit_g[i] = new_limit
+
+        # my_UI.Set_range()
+        # 重绘修改设置后的界面
+        my_UI.Re_next()
         my_UI.team_box.setFocus()
 
         self.close()
