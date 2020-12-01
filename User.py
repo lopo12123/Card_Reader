@@ -406,13 +406,12 @@ class UI(QWidget):
 
         # the function of button 'close' is replaced by 'save'(name not change)
         # which is used to save all the record of the operatinos
-        self.button_close = QPushButton('', self)
-        self.button_close.setMinimumSize(40, 40)
-        self.button_close.setStyleSheet(
+        self.button_save = QPushButton('', self)
+        self.button_save.setMinimumSize(40, 40)
+        self.button_save.setStyleSheet(
             'QPushButton{border-image: url(./Resources/Background/Save_1.png)}'
         )
-        # self.button_close.clicked.connect(self.Re_close)  # changed
-        self.button_close.clicked.connect(self.Re_save)
+        self.button_save.clicked.connect(self.Re_save)
 
         self.button_setting = QPushButton('', self)
         self.button_setting.setMinimumSize(40, 40)
@@ -428,12 +427,19 @@ class UI(QWidget):
         )
         self.button_full.clicked.connect(self.Re_full)'''
 
-        self.button_next = QPushButton('', self)
-        self.button_next.setMinimumSize(40, 40)
-        self.button_next.setStyleSheet(
-            'QPushButton{border-image: url(./Resources/Background/Next_1.png)}'
+        self.button_cancel = QPushButton('', self)
+        self.button_cancel.setMinimumSize(40, 40)
+        self.button_cancel.setStyleSheet(
+            'QPushButton{border-image: url(./Resources/Background/Cancel_1.png)}'
         )
-        self.button_next.clicked.connect(self.Re_next)
+        self.button_cancel.clicked.connect(self.Re_cancel)
+
+        self.button_reset = QPushButton('', self)
+        self.button_reset.setMinimumSize(40, 40)
+        self.button_reset.setStyleSheet(
+            'QPushButton{border-image: url(./Resources/Background/Reset_1.png)}'
+        )
+        self.button_reset.clicked.connect(self.Re_next)
         '''Set the box layout'''
         # line 1 - a message box
         self.h_layout_head = QHBoxLayout()
@@ -453,11 +459,11 @@ class UI(QWidget):
         self.h_layout_end.addStretch()
         self.h_layout_end.addWidget(self.history_list)
         self.h_layout_end.addStretch()
-        self.h_layout_end.addWidget(self.button_close)
+        self.h_layout_end.addWidget(self.button_save)
         self.h_layout_end.addWidget(self.button_setting)
         # self.h_layout_end.addWidget(self.button_full)
-        # self.button_full.move(-100, -100)
-        self.h_layout_end.addWidget(self.button_next)
+        self.h_layout_end.addWidget(self.button_cancel)
+        self.h_layout_end.addWidget(self.button_reset)
 
         # Put six horizontal layouts into a vertical layout
         self.v_layout = QVBoxLayout()  # Instantiate a vertical layout manager
@@ -475,9 +481,6 @@ class UI(QWidget):
 
         # Set the form layout
         self.setLayout(self.v_layout)
-        self.focus_box.setFocus()
-
-    def set_focus(self):
         self.focus_box.setFocus()
 
     def New_line(self, num):
@@ -623,10 +626,6 @@ class UI(QWidget):
             self.bar_group[i].setValue(item)  # self.value_group.index(item)
             i += 1
 
-    def Re_close(self):
-        # Close the current window
-        self.close()
-
     def Re_save(self):
         # get all the operate record
         Database.Create_DB()
@@ -660,6 +659,19 @@ class UI(QWidget):
             self.showMaximized()
             self.team_box.setFocus()
 
+    def Re_cancel(self):  # cancel current operate
+        self.step = -1
+
+        self.history_list.addItem('')
+        self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 撤销成功!')
+        self.history_list.scrollToBottom()
+
+        self.my_move('out', 1)
+        self.step = -1
+        self.change_info(-1)
+
+        self.team_box.setFocus()  # 焦点改回文本框（QLineEdit类型），从 step == -1 重新开始'''
+
     def Re_next(self):  # go to next round
         global User_number_g, User_limit_g
         # reset the 'rate' in database
@@ -691,7 +703,7 @@ class UI(QWidget):
 
         # Record in history
         self.history_list.addItem('')
-        self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 重置成功！')
+        self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 重置成功，重新开始！')
         self.history_list.scrollToBottom()
 
         # Record in database
@@ -756,6 +768,13 @@ class UI(QWidget):
               L-Enter - 16777220
               R-Enter - 16777221
               Backspace - 16777219
+        Update: key coding:
+                / - 47 - Add
+                * - 42 - Sub
+                - - 45 - Double Add
+                + - 43 - Half Sub
+
+                ESC - 16777216 - Next Round（任意时刻可以按下生效）
         '''
         # print(event.key())
 
@@ -768,7 +787,7 @@ class UI(QWidget):
         # if event.key() != 16777220 and event.key() != 16777221:
         self.team_box.clear()
 
-        if event.key() == 16777216:  # esc: go to next term
+        if event.key() == 16777216:  # 'Esc': go to next term
             self.history_list.addItem('')
             self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 进入下一回合!')
             self.history_list.scrollToBottom()
@@ -794,6 +813,21 @@ class UI(QWidget):
             self.step = -1
             self.change_info(-1)
 
+            self.team_box.setFocus()  # 焦点改回文本框（QLineEdit类型），从 step == -1 重新开始
+
+        '''if event.key() == 16777216:  # 'Esc': cancel current operate
+            self.step = -1
+            result = False
+
+            self.history_list.addItem('')
+            self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 撤销成功!')
+            self.history_list.scrollToBottom()
+
+            self.my_move('out', 1)
+            self.step = -1
+            self.change_info(-1)
+
+            self.team_box.setFocus()  # 焦点改回文本框（QLineEdit类型），从 step == -1 重新开始'''
         # Step 2: get the number(how much money to take)
         if self.step == 2 and result is True:
             if event.key() == 16777220 or event.key() == 16777221:  # press 'enter' to confirm
@@ -854,12 +888,13 @@ class UI(QWidget):
                     self.change_info(2)
 
         # Step 0: get the symbol add or sub
+        # 此时焦点在QLabel
         if self.step == 0:
             # Determine whether the currently entered id belongs to the current player
             if self.right_button(event.key()) is True:
                 ''' 1 - now the text in 'team_box' is a number
                     2 - and 'step == 0' means it`s time to choose F1 / F2 '''
-                if event.key() == 16777264:  # key 'F1' - Add
+                if event.key() == 16777264 or event.key() == 47:  # key 'F1' / '/' - Add
                     self.symbol = 1
 
                     self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 确认操作: 加')
@@ -867,7 +902,7 @@ class UI(QWidget):
                     # go to next step
                     self.step = 1
                     self.change_info(1)
-                elif event.key() == 16777265:  # key 'F2' - Sub
+                elif event.key() == 16777265 or event.key() == 42:  # key 'F2' / '*' - Sub
                     self.symbol = -1
 
                     self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 确认操作: 减')
@@ -875,7 +910,7 @@ class UI(QWidget):
                     # go to next step
                     self.step = 1
                     self.change_info(1)
-                elif event.key() == 16777266:  # key 'F3' - double add
+                elif event.key() == 16777266 or event.key() == 45:  # key 'F3' / '-' - double add
                     # Get id
                     self.player_option = self.player1_id
                     # print(self.player_option)
@@ -968,7 +1003,7 @@ class UI(QWidget):
                     # go to next step
                     self.step = -1
                     self.change_info(-1)
-                elif event.key() == 16777269:  # key 'F6' - half sub
+                elif event.key() == 16777269 or event.key() == 43:  # key 'F6' / '+' - half sub
                     # Get id
                     self.player_option = self.player1_id
                     # print(self.player_option)
@@ -999,11 +1034,19 @@ class UI(QWidget):
                     # go to next step
                     self.step = -1
                     self.change_info(-1)
+                else:
+                    # nothing have done
+                    self.step = 0
+                    self.change_info(0)
 
                 if self.step == 1:
                     # show the team_box to get the player2`s number
                     self.my_move('in', 2)
 
+                if self.step == 1 or self.step == -1:
+                    self.team_box.setFocus()  # 焦点改回文本框（QLineEdit类型），读取玩家2编号（输入正确）/读取玩家1ID（输入错误）
+
+        # 此时焦点在QLineEdit
         if self.step == -1 and result is True:
             # get the player1`s id
             # if self.right_button(event.key()) is True:
@@ -1034,6 +1077,7 @@ class UI(QWidget):
 
                     self.step = 0
                     self.change_info(0)
+                    self.focus_box.setFocus()  # 更改焦点控件，读取 / * - + 等符号输入
 
     def my_move(self, where, step_num):
         if where == 'out':
@@ -1049,9 +1093,14 @@ class UI(QWidget):
             # print('move in')
 
     def right_button(self, button_number):
+        #            +,  -,  *,  /,  Backspace, ESC,     NumLock
+        right_num = [43, 45, 42, 47, 16777219, 16777216, 16777253]
+
         if 16777264 <= button_number <= 16777269:  # F1 - F6
             return True
         elif button_number == 16777220 or button_number == 16777221:  # L enter / R enter
+            return True
+        elif button_number in right_num:
             return True
         else:
             return False
