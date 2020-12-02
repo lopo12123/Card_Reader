@@ -47,7 +47,11 @@ def Create_user():  # checked
     my_cursor.execute('''
         CREATE TABLE IF NOT EXISTS OPERATE(
             NUMBER INT PRIMARY KEY NOT NULL,
-            OPERATION VARCHAR NOT NULL
+            CANCEL INT NOT NULL,
+            OPERATION VARCHAR NOT NULL,
+            PLAYER1 INT,
+            PLAYER2 INT,
+            AMOUNT DOUBLE
         );''')
 
 
@@ -184,16 +188,34 @@ def New_Setting(new_max, new_min, new_limit):
         (new_max, new_min, new_limit, 1))
 
 
-def New_operate(my_num, my_text):
+def New_operate(my_num, my_cancel, my_text, my_p1=None, my_p2=None, my_amount=0):
+    '''my_num: (private key) number;
+    my_cancel: (0 / 1) 0: cant be cancelled / 1: can be cancelled
+    my_text: the full operation record
+    my_p1/my_p2: the players(if any)
+    my_amount: the amount(if any)'''
+
     my_cursor.execute(
-        '''INSERT INTO OPERATE VALUES(?, ?);''', (my_num, my_text)
+        '''INSERT INTO OPERATE VALUES(?, ?, ?, ?, ?, ?);''', (my_num, my_cancel, my_text, my_p1, my_p2, my_amount)
     )
 
 
 def Get_operate():
+    '''get a record'''
     my_cursor.execute('''SELECT * FROM OPERATE;''')
     # print(my_cursor.fetchall())
     return my_cursor.fetchall()
+
+
+def Get_operate_record(record_num):
+    '''get the record with record number record_num'''
+    my_cursor.execute('''SELECT * FROM OPERATE WHERE NUMBER = ?;''', [(record_num)])
+    return my_cursor.fetchall()[0]
+
+
+def Delete_operate_record(record_num):
+    '''delete the record with record number record_num'''
+    my_cursor.execute('''DELETE FROM OPERATE WHERE NUMBER = ?;''', [(record_num)])
 
 
 def Delete_operate():
@@ -227,11 +249,7 @@ if __name__ == '__main__':
     Create_DB()  # connect DB
     Create_user()  # create sheet
 
-    '''b = Select_user(15)
-    if b is None:
-        print('no such id')
-    else:
-        print(b)'''
+    # my_cursor.execute('''INSERT INTO SETTING VALUES(1, 20000, 0, 5000);''')
 
     '''
     # test
@@ -254,14 +272,21 @@ if __name__ == '__main__':
     '''
 
     '''
-    New_operate(1, '第一条操作')
-    New_operate(2, 'the second operation')
-    New_operate(3, 'disantiaocaozuo')
+    New_operate(1, 1, '第1条记录', 1, 2, 500)
+    New_operate(2, 1, '第2条记录', 1, 2, 500)
+    New_operate(3, 0, 'next round')
+    New_operate(4, 1, '第3条记录', 2, 3, 500)
     '''
 
-    '''
-    a = Get_operate()
-    print(a)
-    '''
+    '''a = Get_operate()
+    for item in a:
+        if item[1] == 1:
+            print(item[2])
+        else:
+            print('can be canceled')'''
+
+    # Delete_operate_record(12)
+    # a = Get_operate_record(1)
+    # print(a)
 
     Close_database()
