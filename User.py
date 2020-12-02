@@ -244,13 +244,13 @@ class UI_guide2(QWidget):
             elif self.now_number == max_user:  # last insert
                 my_number = '*OPT' + str(History_number) + ':  '
                 my_time = QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss')
-                my_operation = '  进入第1回合'
+                my_operation = my_number + my_time + '  进入第1回合'
 
                 # 清空原有记录表, 用于存放当前次操作记录数据
                 Database.Create_DB()
                 Database.Delete_operate()
                 Database.Reset_rate()
-                Database.New_operate(History_number, my_number + my_time + my_operation)
+                Database.New_operate(History_number, 0, my_operation)
                 result = Database.Get_Setting()
                 Database.Close_database()
 
@@ -634,7 +634,7 @@ class UI(QWidget):
 
         fo = open('历史记录.txt', 'w')  # 文件只写, 新操作会覆盖旧文档
         for item in history_result:
-            fo.write(item[1])
+            fo.write(item[2])
             fo.write('\n\n')  # new line
         fo.close()
 
@@ -660,7 +660,7 @@ class UI(QWidget):
             self.team_box.setFocus()
 
     def Re_cancel(self):  # cancel current operate
-        self.step = -1
+        '''self.step = -1
 
         self.history_list.addItem('')
         self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 撤销成功!')
@@ -668,9 +668,103 @@ class UI(QWidget):
 
         self.my_move('out', 1)
         self.step = -1
-        self.change_info(-1)
+        self.change_info(-1)'''
 
-        self.team_box.setFocus()  # 焦点改回文本框（QLineEdit类型），从 step == -1 重新开始'''
+        global History_number
+
+        # 进行撤销操作
+        if self.step == 0 or self.step == 1 or self.step == 2:  # 正在输入途中: 撤销当前次操作（重置）  done
+            self.history_list.addItem('')  # 显示提示信息
+            self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 当前操作重置成功!')
+            self.history_list.scrollToBottom()
+
+            self.my_move('out', 1)  # 重置屏幕控件状态
+            self.step = -1
+            self.change_info(-1)
+        elif self.step == -1:  # 在初始状态: 撤销上一次操作（回退）
+            last_record_number = History_number - 1  # 获取上一条历史记录编号
+            Database.Create_DB()
+            last_record = Database.Get_operate_record(last_record_number)  # 上一条历史记录的整个元组
+            Database.Close_database()
+            deletability = last_record[1]  # 是否可删除: 0 - 否 / 1 - 是
+
+            if deletability == 0:  # 不可撤销
+                self.history_list.addItem('')  # 显示提示信息
+                self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 无法继续撤销!')
+                self.history_list.scrollToBottom()
+
+                self.message_box_player1.setPixmap(QPixmap(Image.Unknown))
+                self.message_box_player2.setPixmap(QPixmap(Image.Unknown))
+                self.message_box_number.setText('<h2>撤销</h2>')
+                self.message_box_result.setPixmap(QPixmap(Image.Fail))
+            elif deletability == 1:  # 可撤销
+                self.history_list.addItem('')  # 显示提示信息
+                self.history_list.addItem(QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss') + ' 上次操作撤销成功!')
+                self.history_list.scrollToBottom()
+
+                last_operation = last_record[2]  # 记录的字符显示部分
+                last_p1 = last_record[3]  # 上一次操作的 p1
+                last_p2 = last_record[4]  # 上一次操作的 p2
+                if last_record[5] >= 0:  # 分类讨论 判断加减和数值
+                    last_opt = '加'
+                    last_amount = last_record[5]
+                else:
+                    last_opt = '减'
+                    last_amount = -last_record[5]
+
+                self.recover(last_p1, last_p2, last_opt, last_amount)  # 数据恢复到上一次操作前的状态
+                Database.Create_DB()
+                Database.Delete_operate_record(last_record_number)  # 回退一条记录
+                Database.Close_database()
+                History_number -= 1  # 记录数减一
+
+            self.my_move('out', 1)  # 重置屏幕控件状态
+            self.step = -1
+            self.change_info(-1)
+
+        # 重新设置焦点所在控件
+        if self.step == -1 or self.step == 1 or self.step == 2:  # QLineEdit
+            self.team_box.setFocus()  # 焦点改回文本框（QLineEdit类型）
+        elif self.step == 0:  # QLabel
+            self.focus_box.setFocus()
+
+    def recover(self, l_p1, l_p2, l_opt, l_amount):
+        '''撤销一条操作，即将两个用户的数据恢复到操作前'''
+        global User_id_g, History_number
+
+        r_p1 = l_p1
+        r_p2 = l_p2
+        r_amount = l_amount
+
+        # Find out p1 and p2`s index in 'User_id_g[]'
+        for item in User_id_g:
+            if str(item) == r_p1:
+                r_p1_index = User_id_g.index(item)
+            if str(item) == r_p2:
+                r_p2_index = User_id_g.index(item)
+        # print(str(r_p1_index) + '/' + str(r_p2_index))
+        p1_current = self.value_group[r_p1_index]
+        p2_current = self.value_group[r_p2_index]
+
+        self.message_box_player1.setPixmap(QPixmap(Image.Team[r_p1_index]))
+        self.message_box_player2.setPixmap(QPixmap(Image.Team[r_p2_index]))
+        self.message_box_number.setText('<h2>撤销</h2>')
+        self.message_box_result.setPixmap(QPixmap(Image.Success))
+
+        if l_opt == '加':
+            # print('恢复:' + str(r_p1) + ' 减 ' + str(l_amount) + ';' + str(r_p2) + ' 加 ' + str(l_amount))
+            p1_next = p1_current - r_amount
+            p2_next = p2_current + r_amount
+        elif l_opt == '减':
+            # print('恢复:' + str(r_p1) + ' 加 ' + str(l_amount) + ';' + str(r_p2) + ' 减 ' + str(l_amount))
+            p1_next = p1_current + r_amount
+            p2_next = p2_current - r_amount
+
+        # print(str(p1_next) + '/' + str(p2_next))
+        self.value_group[r_p1_index] = p1_next
+        self.value_group[r_p2_index] = p2_next
+
+        self.Set_value()
 
     def Re_next(self):  # go to next round
         global User_number_g, User_limit_g
@@ -710,10 +804,10 @@ class UI(QWidget):
         global History_number
         my_number = '*OPT' + str(History_number) + ':  '
         my_time = QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss')
-        my_operation = my_time + '  重置数据, 重新开始; 进入第1回合'
+        my_operation = my_number + my_time + '  重置数据, 重新开始; 进入第1回合'
 
         Database.Create_DB()
-        Database.New_operate(History_number, my_number + my_operation)
+        Database.New_operate(History_number, 0, my_operation)
         Database.Close_database()
 
         History_number += 1
@@ -749,10 +843,10 @@ class UI(QWidget):
     def keyPressEvent(self, event):
         '''
         ! 刷卡器每次输入结束后自带一个enter(键值为16777220)
-        step -1: get p1`s id
-        step 0: get add / sub
-        step 1: get p2`s id
-        step 2: get the number
+        step -1: get p1`s id  --  focus on QLineEdit
+        step 0: get add / sub  --  focus on QLabel
+        step 1: get p2`s id  --  focus on QLineEdit
+        step 2: get the number  --  focus on QLineEdit
         '''
         '''
         Function: keyPressEvent(self, event)
@@ -795,13 +889,13 @@ class UI(QWidget):
             self.round += 1
             my_number = '*OPT' + str(History_number) + ':  '
             my_time = QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss')
-            my_operation = '  进入第' + str(self.round) + '回合'
+            my_operation = my_number + my_time + '  进入第' + str(self.round) + '回合'
 
             self.message_box_round.setText('<h2>当前回合: ' + str(self.round) + '</h2>')
 
             Database.Create_DB()
             Database.Next_term()
-            Database.New_operate(History_number, my_number + my_time + my_operation)
+            Database.New_operate(History_number, 0, my_operation)
             result = Database.Get_Setting()
             Database.Close_database()
 
@@ -933,7 +1027,7 @@ class UI(QWidget):
                     my_operation = my_time + '  设置玩家' + p_o + ': 倍加;'
 
                     Database.Create_DB()
-                    Database.New_operate(History_number, my_number + my_operation)
+                    Database.New_operate(History_number, 0, my_number + my_operation)
                     Database.Close_database()
 
                     History_number += 1
@@ -964,7 +1058,7 @@ class UI(QWidget):
                     my_operation = my_time + '  设置玩家' + p_o + ': 半加;'
 
                     Database.Create_DB()
-                    Database.New_operate(History_number, my_number + my_operation)
+                    Database.New_operate(History_number, 0, my_number + my_operation)
                     Database.Close_database()
 
                     History_number += 1
@@ -995,7 +1089,7 @@ class UI(QWidget):
                     my_operation = my_time + '  设置玩家' + p_o + ': 倍减;'
 
                     Database.Create_DB()
-                    Database.New_operate(History_number, my_number + my_operation)
+                    Database.New_operate(History_number, 0, my_number + my_operation)
                     Database.Close_database()
 
                     History_number += 1
@@ -1026,7 +1120,7 @@ class UI(QWidget):
                     my_operation = my_time + '  设置玩家' + p_o + ': 半减;'
 
                     Database.Create_DB()
-                    Database.New_operate(History_number, my_number + my_operation)
+                    Database.New_operate(History_number, 0, my_number + my_operation)
                     Database.Close_database()
 
                     History_number += 1
@@ -1243,11 +1337,16 @@ class UI(QWidget):
         # the operate record
         my_number = '*OPT' + str(History_number) + ':  '
         my_time = QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss')
-        my_operation = '  P1: ' + p1_name + ', P2: ' + p2_name + ', 金额: ' + str(self.number) + '; 实际操作: ' + p1_name + opt + p2_name + ' ' + str(should_number) + ';'
+        my_operation = my_number + my_time + '  P1: ' + p1_name + ', P2: ' + p2_name + ', 金额: ' + str(self.number) + '; 实际操作: ' + p1_name + opt + p2_name + ' ' + str(should_number) + ';'
         # print(my_number + my_time + my_operation)
 
+        if opt == ' 加 ':
+            amount = should_number
+        elif opt == ' 减 ':
+            amount = -should_number
+
         Database.Create_DB()
-        Database.New_operate(History_number, my_number + my_time + my_operation)
+        Database.New_operate(History_number, 1, my_operation, self.player1_id, self.player2_id, amount)
         Database.Close_database()
 
         History_number += 1
