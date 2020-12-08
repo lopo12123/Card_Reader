@@ -755,10 +755,10 @@ class UI(QWidget):
             # print('恢复:' + str(r_p1) + ' 减 ' + str(l_amount) + ';' + str(r_p2) + ' 加 ' + str(l_amount))
             p1_next = p1_current - r_amount
             p2_next = p2_current + r_amount
-        elif l_opt == '减':
+        elif l_opt == '减':  # '减'操作的时候p2会加双倍，所以恢复需要双倍扣除
             # print('恢复:' + str(r_p1) + ' 加 ' + str(l_amount) + ';' + str(r_p2) + ' 减 ' + str(l_amount))
             p1_next = p1_current + r_amount
-            p2_next = p2_current - r_amount
+            p2_next = p2_current - r_amount * 2
 
         # print(str(p1_next) + '/' + str(p2_next))
         self.value_group[r_p1_index] = p1_next
@@ -1307,10 +1307,10 @@ class UI(QWidget):
             else:
                 # (3) Successful operation
                 self.message_box_result.setPixmap(QPixmap(Image.Success))
-                # 3.1 p1+/p2-
 
         # ---- solve part ----
 
+        # 3.1 p1+/p2-
         if self.symbol == 1:
             p1_current_value += should_number
             p2_current_value -= should_number
@@ -1319,7 +1319,7 @@ class UI(QWidget):
         # 3.2 p1-/p2+
         elif self.symbol == -1:
             p1_current_value -= should_number
-            p2_current_value += should_number
+            p2_current_value += should_number * 2  # 被给的得到双倍
             User_limit_g[User_id_g.index(self.player1_id)] -= should_number  # *update the limit left
             opt = ' 减 '
 
@@ -1337,7 +1337,10 @@ class UI(QWidget):
         # the operate record
         my_number = '*OPT' + str(History_number) + ':  '
         my_time = QDateTime.currentDateTime().toString('yyyy-MM-dd HH:mm:ss')
-        my_operation = my_number + my_time + '  P1: ' + p1_name + ', P2: ' + p2_name + ', 金额: ' + str(self.number) + '; 实际操作: ' + p1_name + opt + p2_name + ' ' + str(should_number) + ';'
+        if opt == ' 加 ':
+            my_operation = my_number + my_time + '  P1: ' + p1_name + ', P2: ' + p2_name + ', 金额: ' + str(self.number) + '; 实际操作: ' + p1_name + ' 加' + str(should_number) + '; ' + p2_name + ' 减' + str(should_number) + ';'
+        elif opt == ' 减 ':
+            my_operation = my_number + my_time + '  P1: ' + p1_name + ', P2: ' + p2_name + ', 金额: ' + str(self.number) + '; 实际操作: ' + p1_name + ' 减' + str(should_number) + '; ' + p2_name + ' 加' + str(should_number * 2) + ';'
         # print(my_number + my_time + my_operation)
 
         if opt == ' 加 ':
