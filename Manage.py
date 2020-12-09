@@ -277,8 +277,7 @@ class UI(QWidget):
     '''
 
     def Warning(self):
-        self.reply = QMessageBox.question(self, '警告！', '请确认帐号为纯数字！', QMessageBox.Yes, QMessageBox.Yes)
-
+            self.reply = QMessageBox.question(self, '警告！', '请确认帐号为纯数字！', QMessageBox.Yes, QMessageBox.Yes)
 
 # 'NEW' interface
 # 'Edit' interface
@@ -365,18 +364,43 @@ class UI_NEW(QWidget):
                 if int(self.new_balance) < 0:
                     self.Warning_2()
                 else:
-                    Database.Create_DB()
-                    Database.Insert_user(int(self.new_id), self.new_name, int(self.new_balance))
-                    Database.Close_database()
-                    self.close()
+                    a = self.In_db()
+                    if a is False:
+                        # 当前id没有在库中
+                        Database.Create_DB()
+                        Database.Insert_user(int(self.new_id), self.new_name, int(self.new_balance))
+                        Database.Close_database()
+                        self.close()
+                    elif a is True:
+                        # 当前id已经在库中
+                        self.Warning_3()
             else:
                 self.Warning()
+
+    def In_db(self):
+        this_id = int(self.new_id)  # 当前id
+
+        Database.Create_DB()  # 获取所有记录
+        all_tuples = Database.Select_all()
+        Database.Close_database()
+
+        id_group = []  # 存储所有id
+        for item in all_tuples:
+            id_group.append(item[0])
+
+        if this_id not in id_group:
+            return False
+        else:
+            return True
 
     def Warning(self):
         self.reply = QMessageBox.question(self, '警告！', '请确认卡号/余额为纯数字！', QMessageBox.Yes, QMessageBox.Yes)
 
     def Warning_2(self):
         self.reply = QMessageBox.question(self, '警告！', '请确认余额值非负！', QMessageBox.Yes, QMessageBox.Yes)
+
+    def Warning_3(self):
+        self.reply = QMessageBox.question(self, '警告！', '当前卡片已经存储在库中', QMessageBox.Yes, QMessageBox.Yes)
 
 
 # 'Edit' interface
